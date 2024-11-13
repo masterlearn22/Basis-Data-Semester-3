@@ -24,17 +24,17 @@ class BarangController extends Controller
     
     
 
-public function create(){
-    $satuans = db::select('SELECT * FROM SATUAN');
-    return view('barang.create',compact('satuans'));
-}
-    public function store(Request $request)
-    {
-        // Memanggil stored procedure
-        DB::statement('CALL sp_create_barang(?, ?, ?, ?, ?)');
+// public function create(){
+//     $satuans = db::select('SELECT * FROM SATUAN');
+//     return view('barang.create',compact('satuans'));
+// }
+//     public function store(Request $request)
+//     {
+//         // Memanggil stored procedure
+//         DB::statement('CALL sp_create_barang(?, ?, ?, ?, ?)');
     
-        return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan.');
-    }
+//         return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan.');
+//     }
     
 
     public function edit($id)
