@@ -11,31 +11,32 @@ class BarangController extends Controller
     {
         // Ambil data barang
         $barangs = DB::select('SELECT * FROM view_barang');
-    
+
         // Jika mode adalah 'create', tampilkan halaman create barang dengan data satuan
         if ($request->query('mode') === 'create') {
             $satuans = DB::select('SELECT * FROM satuan');
             return view('barang.create', compact('satuans'));
         }
-    
+
         // Jika mode bukan 'create', tampilkan daftar barang
         return view('barang.index', compact('barangs'));
     }
-    
-    
 
-// public function create(){
-//     $satuans = db::select('SELECT * FROM SATUAN');
-//     return view('barang.create',compact('satuans'));
-// }
-//     public function store(Request $request)
-//     {
-//         // Memanggil stored procedure
-//         DB::statement('CALL sp_create_barang(?, ?, ?, ?, ?)');
-    
-//         return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan.');
-//     }
-    
+
+
+    public function create()
+    {
+        $satuans = db::select('SELECT * FROM SATUAN');
+        return view('barang.create', compact('satuans'));
+    }
+    public function store(Request $request)
+    {
+        // Memanggil stored procedure
+        DB::statement('CALL sp_create_barang(?, ?, ?, ?, ?)');
+
+        return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan.');
+    }
+
 
     public function edit($id)
     {
@@ -46,20 +47,20 @@ class BarangController extends Controller
         }
         $barang = $barang[0];
         $satuans = DB::select('SELECT * FROM satuan');
-        return view('barang.edit', compact('barang','satuans'));
+        return view('barang.edit', compact('barang', 'satuans'));
     }
 
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
-            'jenis'=>'required',
+            'jenis' => 'required',
             'nama' => 'required',
             'status' => 'required',
             'harga' => 'required|numeric',
-            'idsatuan'=> 'required'
+            'idsatuan' => 'required'
         ]);
 
-        DB::update('UPDATE barang SET jenis=?, nama = ?, status = ?, harga = ?, idsatuan=? WHERE idbarang = ?',[
+        DB::update('UPDATE barang SET jenis=?, nama = ?, status = ?, harga = ?, idsatuan=? WHERE idbarang = ?', [
             $request->input('jenis'),
             $request->input('nama'),
             $request->input('status'),
