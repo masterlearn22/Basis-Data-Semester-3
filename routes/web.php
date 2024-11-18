@@ -56,7 +56,3 @@ Route::resource('detail_retur', DetailReturController::class);
 Route::resource('detail_penjualan', DetailPenjualanController::class);
 Route::resource('margin_penjualan', MarginPenjualanController::class);
 
-Route::get('/barang/create', function () {
-    return redirect()->route('barang.index', ['mode' => 'create']);
-})->name('barang.create');
-

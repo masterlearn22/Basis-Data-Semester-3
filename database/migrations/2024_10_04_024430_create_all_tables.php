@@ -50,7 +50,6 @@ class CreateAllTables extends Migration
             CREATE TABLE barang (
                 idbarang INT PRIMARY KEY AUTO_INCREMENT,
                 jenis CHAR(1),
-                kode_jns_barang CHAR(1),
                 nama VARCHAR(100),
                 idsatuan INT,
                 status TINYINT,

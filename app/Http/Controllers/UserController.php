@@ -27,17 +27,18 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'username' => 'required',
             'password' => 'nullable',
-            'idrole' => 'required',
+            'idrole' => 'required|numeric',
         ]);
-
-        DB::insert('INSERT INTO users (username, password, idrole) VALUES (?, ?, ?)', [
+    
+        DB::statement('CALL sp_create_user(?, ?, ?)', [
             $request->input('username'),
             bcrypt($request->input('password')),
             $request->input('idrole'),
         ]);
-
+    
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
     }
+    
 
     public function edit($id)
     {

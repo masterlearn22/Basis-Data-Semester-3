@@ -24,14 +24,15 @@ class SatuanController extends Controller
             'nama_satuan' => 'required',
             'status' => 'required|numeric',
         ]);
-
-        DB::insert('INSERT INTO satuan (nama_satuan, status) VALUES (?, ?)', [
+    
+        DB::statement('CALL sp_create_satuan(?, ?)', [
             $request->input('nama_satuan'),
             $request->input('status'),
         ]);
-
+    
         return redirect()->route('satuan.index')->with('success', 'Satuan berhasil ditambahkan.');
     }
+    
 
     public function edit($id)
     {

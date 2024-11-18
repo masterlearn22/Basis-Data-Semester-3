@@ -12,12 +12,6 @@ class BarangController extends Controller
         // Ambil data barang
         $barangs = DB::select('SELECT * FROM view_barang');
 
-        // Jika mode adalah 'create', tampilkan halaman create barang dengan data satuan
-        if ($request->query('mode') === 'create') {
-            $satuans = DB::select('SELECT * FROM satuan');
-            return view('barang.create', compact('satuans'));
-        }
-
         // Jika mode bukan 'create', tampilkan daftar barang
         return view('barang.index', compact('barangs'));
     }
@@ -31,11 +25,26 @@ class BarangController extends Controller
     }
     public function store(Request $request)
     {
-        // Memanggil stored procedure
-        DB::statement('CALL sp_create_barang(?, ?, ?, ?, ?)');
-
+        // dd($request->all());
+        $validatedData = $request->validate([
+            'jenis' => 'required',
+            'nama' => 'required|string|max:100',
+            'status' => 'required|boolean',
+            'harga' => 'required|integer',
+            'idsatuan' => 'required|integer',
+        ]);
+    
+        DB::statement('CALL sp_create_barang(?, ?, ?, ?, ?)', [
+            $validatedData['jenis'],
+            $validatedData['nama'],
+            $validatedData['status'],
+            $validatedData['harga'],
+            $validatedData['idsatuan']
+        ]);
+    
         return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan.');
     }
+    
 
 
     public function edit($id)

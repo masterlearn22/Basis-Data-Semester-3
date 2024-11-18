@@ -24,13 +24,14 @@ class RoleController extends Controller
         $validatedData = $request->validate([
             'nama_role' => 'required',
         ]);
-
-        DB::insert('INSERT INTO role (nama_role) VALUES (?)', [
+    
+        DB::statement('CALL sp_create_role(?)', [
             $request->input('nama_role'),
         ]);
-
+    
         return redirect()->route('role.index')->with('success', 'Role berhasil ditambahkan.');
     }
+    
 
     public function edit($id)
     {

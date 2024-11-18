@@ -22,22 +22,21 @@ class VendorController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi data yang diinput
         $validatedData = $request->validate([
             'nama_vendor' => 'required|max:100',
             'badan_hukum' => 'required|size:1',
-            'status' => 'required|size:1'
+            'status' => 'required|size:1',
         ]);
-
-        // Menyimpan data ke database
-        DB::insert('INSERT INTO vendor (nama_vendor, badan_hukum, status) VALUES (?, ?, ?)', [
+    
+        DB::statement('CALL sp_create_vendor(?, ?, ?)', [
             $request->input('nama_vendor'),
             $request->input('badan_hukum'),
             $request->input('status'),
         ]);
-
+    
         return redirect()->route('vendor.index')->with('success', 'Vendor berhasil ditambahkan.');
     }
+    
 
     public function show($id)
     {
