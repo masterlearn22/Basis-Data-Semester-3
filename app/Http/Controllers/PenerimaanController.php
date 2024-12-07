@@ -30,6 +30,7 @@ class PenerimaanController extends Controller
     // Menyimpan data penerimaan baru
     public function store(Request $request)
     {
+       // dd($request->all());
         $validatedData = $request->validate([
             'idpengadaan' => 'required|numeric',
             'status' => 'required',

@@ -24,18 +24,19 @@ class ReturController extends Controller
     {
         $validatedData = $request->validate([
             'idpenerimaan' => 'required|numeric',
-            'iduser'=> 'required',
+            'iduser'=> 'required|numeric',
             'jumlah' => 'required|numeric',
         ]);
-
-        DB::insert('INSERT INTO retur (idpenerimaan,iduser, jumlah, created_at, updated_at) VALUES (?,?, ?, NOW(), NOW())', [
+    
+        DB::statement('CALL sp_create_retur(?, ?, ?)', [
             $request->input('idpenerimaan'),
             $request->input('iduser'),
-            $request->input('jumlah'),
+            $request->input('jumlah')
         ]);
-
+    
         return redirect()->route('retur.index')->with('success', 'Retur berhasil ditambahkan.');
     }
+    
 
     public function edit($id)
     {

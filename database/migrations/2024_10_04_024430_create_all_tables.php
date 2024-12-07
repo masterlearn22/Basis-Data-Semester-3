@@ -82,7 +82,7 @@ class CreateAllTables extends Migration
                 iduser INT,
                 status VARCHAR(1),
                 idvendor INT,
-                subtotal_nilai INT,
+                subtotal_nilai BIGINT,
                 ppn INT,
                 total_nilai INT,
                 FOREIGN KEY (idvendor) REFERENCES vendor(idvendor) ON DELETE SET NULL,
@@ -96,7 +96,7 @@ class CreateAllTables extends Migration
                 iddetail_pengadaan BIGINT PRIMARY KEY AUTO_INCREMENT,
                 harga_satuan INT,
                 jumlah INT,
-                sub_total INT,
+                sub_total BIGINT,
                 idbarang INT,
                 idpengadaan BIGINT,
                 FOREIGN KEY (idpengadaan) REFERENCES pengadaan(idpengadaan) ON DELETE CASCADE,
@@ -125,7 +125,7 @@ class CreateAllTables extends Migration
                 idbarang INT,
                 jumlah_terima INT,
                 harga_satuan INT,
-                sub_total_terima INT,
+                sub_total INT,
                 FOREIGN KEY (idpenerimaan) REFERENCES penerimaan(idpenerimaan) ON DELETE CASCADE,
                 FOREIGN KEY (idbarang) REFERENCES barang(idbarang) ON DELETE SET NULL
             );

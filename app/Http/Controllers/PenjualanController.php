@@ -23,23 +23,26 @@ class PenjualanController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'subtotal_awal' => 'required|numeric',
-            'subtotal_akhir' => 'required|numeric',
-            'ppn' => 'required|numeric',
-            'idmargin_penjualan'=>'required',
+            'subtotal_nilai' => 'required|numeric',
+            'idmargin_penjualan' => 'required|numeric',
             'iduser' => 'required|numeric',
         ]);
-
-        DB::insert('INSERT INTO penjualan (subtotal_awal, subtotal_akhir, ppn,idmargin_penjualan, iduser, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())', [
-            $request->input('subtotal_awal'),
-            $request->input('subtotal_akhir'),
-            $request->input('ppn'),
-            $request->input('idmargin_penjualan'),
-            $request->input('iduser'),
-        ]);
-
-        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil ditambahkan.');
+    
+        try {
+            // Panggil stored procedure untuk menyimpan data penjualan
+            DB::statement('CALL sp_create_penjualan(?, ?, ?)', [
+                $request->input('subtotal_nilai'),
+                $request->input('idmargin_penjualan'),
+                $request->input('iduser'),
+            ]);
+    
+            return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return redirect()->route('penjualan.create')->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+        }
     }
+    
+
 
     public function edit($id)
     {
@@ -56,8 +59,8 @@ class PenjualanController extends Controller
     {
         $validatedData = $request->validate([
             'subtotal_awal' => 'required|numeric',
-            'subtotal_akhir' => 'required|numeric',
             'ppn' => 'required|numeric',
+            'total_nilai' => 'required|numeric',
             'idvendor' => 'required|numeric',
         ]);
 

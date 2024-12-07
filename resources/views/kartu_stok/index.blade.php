@@ -8,18 +8,15 @@
             <thead>
                 <tr>
                     <th>Barang</th>
-                    <th>Jenis Transaksi</th>
                     <th>Jumlah Masuk</th>
                     <th>Jumlah Keluar</th>
                     <th>Stok</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($kartu_stoks as $kartu_stok)
                     <tr>
                         <td>{{ $kartu_stok->nama }}</td>
-                        <td>{{ $kartu_stok->jenis_transaksi }}</td>
                         <td>{{ $kartu_stok->masuk }}</td>
                         <td>{{ $kartu_stok->keluar }}</td>
                         <td>{{ $kartu_stok->stock }}</td>

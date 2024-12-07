@@ -5,7 +5,7 @@
     <div class="container">
         <h2>List of Detail Penerimaan</h2>
 
-        <a href="{{ route('detail_penerimaan.create') }}" class="btn btn-primary mb-3">Add Detail Penerimaan</a>
+        <a href="{{ route('detail_penerimaan.create') }}" class="mb-3 btn btn-primary">Add Detail Penerimaan</a>
 
 
         <table class="table table-bordered">
@@ -13,7 +13,7 @@
                 <tr>
                     <th>Penerimaan</th>
                     <th>Barang</th>
-                    <th>Harga Satuan</th>
+                    <th>Harga</th>
                     <th>Jumlah Terima</th>
                     <th>Sub Total</th>
                     <th>Actions</th>

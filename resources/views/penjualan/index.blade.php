@@ -5,16 +5,16 @@
     <div class="container">
         <h2>List of Penjualan</h2>
 
-        <a href="{{ route('penjualan.create') }}" class="btn btn-primary mb-3">Add Penjualan</a>
+        <a href="{{ route('penjualan.create') }}" class="mb-3 btn btn-primary">Add Penjualan</a>
 
 
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>Subtotal Awal</th>
-                    <th>Subtotal Akhir</th>
+                    <th>Subtotal Nilai</th>
                     <th>PPN</th>
                     <th>Margin Penjualan</th>
+                    <th>Total Nilai</th>
                     <th>User</th>
                     <th>Actions</th>
                 </tr>
@@ -22,10 +22,10 @@
             <tbody>
                 @foreach($penjualans as $penjualan)
                     <tr>
-                        <td>{{ $penjualan->subtotal_awal }}</td>
-                        <td>{{ $penjualan->subtotal_akhir }}</td>
+                        <td>{{ $penjualan->subtotal_nilai }}</td>
                         <td>{{ $penjualan->ppn }}</td>
                         <td>{{ $penjualan->persen }}</td>
+                        <td>{{ $penjualan->total_nilai }}</td>
                         <td>{{ $penjualan->username }}</td>
                         <td>
                             <a href="{{ route('penjualan.edit', $penjualan->idpenjualan) }}" class="btn btn-warning">Edit</a>

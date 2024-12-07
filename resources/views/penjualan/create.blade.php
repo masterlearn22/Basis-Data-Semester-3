@@ -8,19 +8,10 @@
         <form action="{{ route('penjualan.store') }}" method="POST">
             @csrf
             <div class="form-group">
-                <label for="subtotal_awal">Subtotal Awal</label>
-                <input type="number" class="form-control" id="subtotal_awal" name="subtotal_awal" step="0.01" required>
+                <label for="subtotal_nilai">Sub Total Nilai</label>
+                <input type="number" class="form-control" id="subtotal_nilai" name="subtotal_nilai" step="0.01" required>
             </div>
 
-            <div class="form-group">
-                <label for="subtotal_akhir">Subtotal Akhir</label>
-                <input type="number" class="form-control" id="subtotal_akhir" name="subtotal_akhir" step="0.01" required>
-            </div>
-
-            <div class="form-group">
-                <label for="ppn">PPN</label>
-                <input type="number" class="form-control" id="ppn" name="ppn" step="0.01" required>
-            </div>
 
             <div class="form-group">
                 <label for="idmargin_penjualan">Margin Penjualan</label>

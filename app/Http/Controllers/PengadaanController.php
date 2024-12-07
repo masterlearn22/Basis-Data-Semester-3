@@ -24,6 +24,7 @@ class PengadaanController extends Controller
 
     public function store(Request $request)
     {
+        
         $validatedData = $request->validate([
             'idvendor' => 'required|numeric',
             'ppn' => 'required|numeric',

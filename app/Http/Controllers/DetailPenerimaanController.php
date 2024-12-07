@@ -42,46 +42,61 @@ class DetailPenerimaanController extends Controller
 
     public function store(Request $request)
     {
-        // Debug input untuk melihat apa yang diterima
-        //dd($request->all());
-
         // Validasi input
         $validatedData = $request->validate([
             'idpenerimaan' => 'required|numeric',
             'idbarang' => 'required|numeric',
             'jumlah_terima' => 'required|numeric',
         ]);
-
-        // Ambil harga barang dari database
-        $barang = DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$request->input('idbarang')]);
-
-        if (empty($barang)) {
-            return redirect()->route('detail_penerimaan.create')->with('error', 'Barang tidak ditemukan.');
-        }
-
-        // Hitung sub_total berdasarkan harga_satuan dan jumlah_terima
-        $sub_total = $barang[0]->harga * $request->input('jumlah_terima');
-
+    
         try {
-            // Insert data baru ke tabel detail_penerimaan
-            DB::insert(
-                '
-                INSERT INTO detail_penerimaan (idpenerimaan, idbarang, harga_satuan, jumlah_terima, sub_total, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
-                [
+            // Ambil harga barang dari database
+            $barang = DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$request->input('idbarang')]);
+    
+            if (empty($barang)) {
+                return redirect()->route('detail_penerimaan.create')->with('error', 'Barang tidak ditemukan.');
+            }
+    
+            // Hitung sub_total
+            $harga = $barang[0]->harga ?? null;
+            
+            $sub_total = $harga * $request->input('jumlah_terima');
+
+            
+            // Masukkan data ke detail_penerimaan
+            try {
+                // Debug data yang akan diinsert
+                $data = [
                     $request->input('idpenerimaan'),
                     $request->input('idbarang'),
-                    $barang[0]->harga, // Ambil harga dari hasil query
+                    $harga,
                     $request->input('jumlah_terima'),
                     $sub_total,
-                ]
-            );
-
+                ];
+                // dd($data); // Pastikan semua data sesuai
+            
+                // Masukkan data ke tabel detail_penerimaan
+                DB::insert(
+                    'INSERT INTO detail_penerimaan (idpenerimaan, idbarang, harga_satuan, jumlah_terima, sub_total)
+                     VALUES (?, ?, ?, ?, ?)',
+                    $data
+                );
+            
+                // dd('Insert success'); // Jika mencapai sini, query berhasil
+            } catch (\Exception $e) {
+                // Tangkap detail error
+                dd('Error:', $e->getMessage());
+            }
+            
+            
+    
             return redirect()->route('detail_penerimaan.index')->with('success', 'Detail Penerimaan berhasil ditambahkan.');
         } catch (\Exception $e) {
+    
             return redirect()->route('detail_penerimaan.create')->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
+    
 
     public function edit($detail_penerimaan)
     {
@@ -96,9 +111,9 @@ class DetailPenerimaanController extends Controller
         $penerimaans = DB::select('SELECT * FROM penerimaan');
         $barangs = DB::select('SELECT * FROM barang');
 
-        // Ambil harga barang yang dipilih dari session atau dari detail penerimaan
+        // Ambil harga_satuan barang yang dipilih dari session atau dari detail penerimaan
         $selectedIdBarang = $detail_penerimaan[0]->idbarang; // Use the idbarang from the detail penerimaan
-        $selectedBarang = session('selectedBarang') ?: DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$selectedIdBarang])[0];
+        $selectedBarang = session('selectedBarang') ?: DB::select('SELECT harga_satuan FROM barang WHERE idbarang = ?', [$selectedIdBarang])[0];
 
         return view('detail_penerimaan.edit', [
             'detail_penerimaan' => $detail_penerimaan[0],

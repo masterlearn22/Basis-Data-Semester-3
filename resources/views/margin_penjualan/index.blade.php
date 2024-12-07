@@ -5,12 +5,13 @@
     <div class="container">
         <h2>List of Margin Penjualan</h2>
 
-        <a href="{{ route('margin_penjualan.create') }}" class="btn btn-primary mb-3">Add Margin Penjualan</a>
+        <a href="{{ route('margin_penjualan.create') }}" class="mb-3 btn btn-primary">Add Margin Penjualan</a>
 
 
         <table class="table table-bordered">
             <thead>
                 <tr>
+                    <th>ID margin</th>
                     <th>Persen</th>
                     <th>Actions</th>
                 </tr>
@@ -18,6 +19,7 @@
             <tbody>
                 @foreach($margin_penjualans as $margin_penjualan)
                     <tr>
+                        <td>{{ $margin_penjualan->idmargin_penjualan}} </td>
                         <td>{{ $margin_penjualan->persen }} %</td>
                         <td>
                             <a href="{{ route('margin_penjualan.edit', $margin_penjualan->idmargin_penjualan) }}" class="btn btn-warning">Edit</a>

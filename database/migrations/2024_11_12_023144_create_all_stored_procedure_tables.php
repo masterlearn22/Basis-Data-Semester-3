@@ -11,6 +11,13 @@ return new class extends Migration {
     {
         // Stored Procedure untuk barang
         DB::statement('DROP PROCEDURE IF EXISTS sp_create_barang');
+        DB::statement('DROP PROCEDURE IF EXISTS sp_create_user');
+        DB::statement('DROP PROCEDURE IF EXISTS sp_create_role');
+        DB::statement('DROP PROCEDURE IF EXISTS sp_create_vendor');
+        DB::statement('DROP PROCEDURE IF EXISTS sp_create_satuan');
+        DB::statement("DROP PROCEDURE IF EXISTS sp_create_penerimaan");
+        DB::statement("DROP PROCEDURE IF EXISTS sp_create_retur");
+        DB::statement("DROP PROCEDURE IF EXISTS sp_create_penjualan");
         DB::statement('
             CREATE PROCEDURE sp_create_barang(
                 IN p_jenis CHAR(1),
@@ -72,17 +79,66 @@ return new class extends Migration {
                 VALUES (p_nama_satuan, p_status);
             END
         ');
+
+        DB::statement('
+         CREATE PROCEDURE sp_create_penerimaan(
+        IN p_idpengadaan INT,
+        IN p_status VARCHAR(255),
+        IN p_iduser INT
+    )
+    BEGIN
+        INSERT INTO penerimaan (idpengadaan, status, created_at, iduser)
+        VALUES (p_idpengadaan, p_status, NOW(), p_iduser);
+    END 
+        ');
+
+        DB::statement('
+        CREATE PROCEDURE sp_create_retur(
+    IN p_idpenerimaan INT,
+    IN p_iduser INT,
+    IN p_jumlah INT
+)
+BEGIN
+    INSERT INTO retur (idpenerimaan, iduser, jumlah, created_at, updated_at)
+    VALUES (p_idpenerimaan, p_iduser, p_jumlah, NOW(), NOW());
+END
+        ');
+
+        DB::statement('
+CREATE PROCEDURE sp_create_penjualan(
+    IN p_subtotal_nilai INT,
+    IN p_idmargin_penjualan INT,
+    IN p_iduser INT
+)
+BEGIN
+    DECLARE ppn_rate DOUBLE;
+    DECLARE ppn_value INT;
+    DECLARE total_value INT;
+
+    -- Ambil persentase PPN dari margin_penjualan
+    SELECT persen INTO ppn_rate
+    FROM margin_penjualan
+    WHERE idmargin_penjualan = p_idmargin_penjualan;
+
+    -- Hitung PPN dan total nilai
+    SET ppn_value = p_subtotal_nilai * (ppn_rate / 100);
+    SET total_value = p_subtotal_nilai + ppn_value;
+
+    -- Masukkan data ke tabel penjualan
+    INSERT INTO penjualan (subtotal_nilai, ppn, total_nilai, idmargin_penjualan, iduser, created_at, updated_at)
+    VALUES (p_subtotal_nilai, ppn_value, total_value, p_idmargin_penjualan, p_iduser, NOW(), NOW());
+END;
+
+        ');
+
+    //     DB::statement('
+        
+    //     ');
+
+    //     DB::statement('
+        
+    //     ');
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        DB::statement('DROP PROCEDURE IF EXISTS sp_create_barang');
-        DB::statement('DROP PROCEDURE IF EXISTS sp_create_user');
-        DB::statement('DROP PROCEDURE IF EXISTS sp_create_role');
-        DB::statement('DROP PROCEDURE IF EXISTS sp_create_vendor');
-        DB::statement('DROP PROCEDURE IF EXISTS sp_create_satuan');
-    }
+
 };

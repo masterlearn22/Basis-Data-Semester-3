@@ -30,8 +30,8 @@
 
             <!-- Tampilkan harga barang, hanya sebagai informasi -->
             <div class="form-group">
-                <label for="harga_satuan">Harga Satuan</label>
-                <input type="text" class="form-control" id="harga_satuan" name="harga_satuan" value="{{ $selectedBarang->harga }}" readonly>
+                <label for="harga">Harga</label>
+                <input type="text" class="form-control" id="harga" name="harga" value="{{ $selectedBarang->harga }}" readonly>
             </div>
 
             <div class="form-group">
@@ -58,9 +58,9 @@
                 .then(data => {
                     // Perbarui field harga satuan
                     if (data && data.harga) {
-                        document.getElementById('harga_satuan').value = data.harga;
+                        document.getElementById('harga').value = data.harga;
                     } else {
-                        document.getElementById('harga_satuan').value = ''; // Atau pesan lain jika harga tidak ditemukan
+                        document.getElementById('harga').value = ''; // Atau pesan lain jika harga tidak ditemukan
                     }
                 })
                 .catch(error => console.error('Error:', error));
