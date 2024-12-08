@@ -12,7 +12,7 @@ class PenerimaanController extends Controller
     {
         // Query SQL untuk mengambil data penerimaan, beserta informasi vendor dan user
         $penerimaans = DB::select(' SELECT * FROM view_penerimaan');
-        
+
         return view('penerimaan.index', compact('penerimaans'));
     }
 
@@ -24,7 +24,7 @@ class PenerimaanController extends Controller
         $barangs = DB::select('SELECT * FROM barang');
         $users = DB::select('SELECT * FROM users');
 
-        return view('penerimaan.create', compact('pengadaans', 'barangs','users'));
+        return view('penerimaan.create', compact('pengadaans', 'barangs', 'users'));
     }
 
     // Menyimpan data penerimaan baru
@@ -36,7 +36,7 @@ class PenerimaanController extends Controller
             'status' => 'required|string',
             'iduser' => 'required|numeric'
         ]);
-    
+
         try {
             // Panggil stored procedure untuk membuat penerimaan
             $result = DB::select('CALL sp_create_penerimaan(?, ?, ?)', [
@@ -44,10 +44,10 @@ class PenerimaanController extends Controller
                 $request->input('status'),
                 $request->input('iduser')
             ]);
-    
+
             // Ambil ID penerimaan yang baru saja dibuat
             $idPenerimaan = $result[0]->idpenerimaan;
-    
+
             return redirect()->route('penerimaan.index')
                 ->with('success', 'Penerimaan berhasil ditambahkan.');
         } catch (\Exception $e) {
@@ -68,35 +68,54 @@ class PenerimaanController extends Controller
 
         $pengadaans = DB::select('SELECT * FROM pengadaan');
         $users = DB::select('SELECT * FROM users');
-        
+
         // Ambil penerimaan pertama dari hasil query
         $penerimaan = $penerimaan[0];
-        
+
         return view('penerimaan.edit', compact('penerimaan', 'pengadaans', 'users'));
     }
 
     // Menyimpan perubahan data penerimaan
-    public function update(Request $request, $id)
+    public function update(Request $request, $idpenerimaan)
     {
+        // Validasi input
         $validatedData = $request->validate([
-            'idpengadaan' => 'required|numeric',
-            'status' => 'required',
-            'iduser'=> 'required'
+            'idpengadaan' => 'required|exists:pengadaan,idpengadaan',
+            'tanggal' => 'required|date',
+            'total_diterima' => 'required|numeric',
+            'status' => 'required|in:0,1',
+            'iduser' => 'required|exists:users,iduser'
         ]);
 
-        // Query SQL untuk update tabel penerimaan
-        DB::statement('
-            UPDATE penerimaan 
-            SET idpengadaan = ?, status = ?, created_at = NOW() ,iduser= ?
-            WHERE idpenerimaan = ?
-        ', [
-            $request->input('idpengadaan'),
-            $request->input('status'),
-            $request->input('iuser'),
-            $id,
-        ]);
+        try {
+            // Panggil fungsi update dengan parameter dari validasi
+            $result = DB::select('SELECT fn_update_penerimaan(?, ?, ?, ?, ?, ?) AS result', [
+                $idpenerimaan,
+                $validatedData['idpengadaan'],
+                $validatedData['tanggal'],
+                $validatedData['total_diterima'],
+                $validatedData['status'],
+                $validatedData['iduser']
+            ]);
 
-        return redirect()->route('penerimaan.index')->with('success', 'Penerimaan berhasil diperbarui.');
+            // Ambil hasil dari fungsi
+            $rowsAffected = $result[0]->result;
+
+            // Cek hasil update
+            if ($rowsAffected > 0) {
+                return redirect()->route('penerimaan.index')
+                    ->with('success', 'Penerimaan berhasil diupdate');
+            } else {
+                return redirect()->back()
+                    ->with('error', 'Gagal update penerimaan')
+                    ->withInput();
+            }
+        } catch (\Exception $e) {
+            // Tangani error yang mungkin terjadi
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     // Menghapus penerimaan dan detail penerimaan terkait

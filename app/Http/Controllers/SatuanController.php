@@ -24,15 +24,15 @@ class SatuanController extends Controller
             'nama_satuan' => 'required',
             'status' => 'required|numeric',
         ]);
-    
+
         DB::statement('CALL sp_create_satuan(?, ?)', [
             $request->input('nama_satuan'),
             $request->input('status'),
         ]);
-    
+
         return redirect()->route('satuan.index')->with('success', 'Satuan berhasil ditambahkan.');
     }
-    
+
 
     public function edit($id)
     {
@@ -41,24 +41,36 @@ class SatuanController extends Controller
         if (!$satuan) {
             return redirect()->route('satuan.index')->with('error', 'Satuan tidak ditemukan.');
         }
-        $satuan=$satuan[0];
+        $satuan = $satuan[0];
         return view('satuan.edit', compact('satuan'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $idsatuan)
     {
+        // Validasi input
         $validatedData = $request->validate([
-            'nama_satuan' => 'required',
-            'status' => 'required|numeric',
+            'nama_satuan' => 'required|string|max:45',
+            'status' => 'required|in:0,1'
         ]);
 
-        DB::update('UPDATE satuan SET nama_satuan = ?, status = ? WHERE idsatuan = ?', [
-            $request->input('nama_satuan'),
-            $request->input('status'),
-            $id,
-        ]);
+        // Panggil fungsi update dari database
+        $result = DB::select('SELECT fn_update_satuan(?, ?, ?) AS result', [
+            $idsatuan,
+            $validatedData['nama_satuan'],
+            $validatedData['status']
+        ])[0]->result;
 
-        return redirect()->route('satuan.index')->with('success', 'Satuan berhasil diperbarui.');
+        // Cek hasil update
+        if ($result === 1) {
+            return redirect()->route('satuan.index')
+                ->with('success', 'Satuan berhasil diupdate');
+        } elseif ($result === -2) {
+            return back()->with('error', 'Nama satuan sudah ada')
+                ->withInput();
+        } else {
+            return back()->with('error', 'Gagal update satuan')
+                ->withInput();
+        }
     }
 
     public function destroy($id)

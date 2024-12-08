@@ -15,12 +15,12 @@
 
             <div class="form-group">
                 <label for="badan_hukum">Badan Hukum</label>
-                <input type="text" class="form-control" id="badan_hukum" name="badan_hukum" required>
+                <input type="text" class="form-control" id="badan_hukum" name="badan_hukum" value="{{ $vendor->badan_hukum }}" required>
             </div>
 
             <div class="form-group">
                 <label for="status">status</label>
-                <input type="text" class="form-control" id="status" name="status" required>
+                <input type="text" class="form-control" id="status" name="status" value="{{ $vendor->status }}" required>
             </div>
 
             <button type="submit" class="btn btn-primary">Update Vendor</button>

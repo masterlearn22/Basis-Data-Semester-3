@@ -29,17 +29,17 @@ class DetailPengadaanController extends Controller
             'idbarang' => 'required|numeric',
             'jumlah' => 'required|numeric|min:1',
         ]);
-    
+
         // Panggil stored procedure untuk membuat detail pengadaan
         $result = DB::select('CALL sp_create_detail_pengadaan(?, ?, ?)', [
             $request->input('idpengadaan'),
             $request->input('idbarang'),
             $request->input('jumlah')
         ]);
-    
+
         // Ambil ID detail pengadaan yang baru saja dibuat
         $idDetailPengadaan = $result[0]->iddetail_pengadaan;
-    
+
         return redirect()->route('detail_pengadaan.index', ['idpengadaan' => $request->input('idpengadaan')])
             ->with('success', 'Detail Pengadaan berhasil ditambahkan.');
     }
@@ -62,34 +62,36 @@ class DetailPengadaanController extends Controller
         return view('detail_pengadaan.edit', compact('detail_pengadaan', 'pengadaans', 'barangs'));
     }
 
-    public function update(Request $request, $id)
+    public function updateDetail(Request $request, $iddetail_pengadaan)
     {
         $validatedData = $request->validate([
-            'idpengadaan' => 'required|numeric',
-            'idbarang' => 'required|numeric',
-            'jumlah' => 'required|numeric',
+            'idpengadaan' => 'nullable|exists:pengadaan,idpengadaan',
+            'idbarang' => 'nullable|exists:barang,idbarang',
+            'harga_satuan' => 'nullable|numeric',
+            'jumlah' => 'nullable|numeric'
         ]);
-
-        // Mengambil harga satuan dari tabel barang berdasarkan idbarang
-        $barang = DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$request->input('idbarang')]);
-        $harga_satuan = $barang[0]->harga;
-
-        // Menghitung subtotal berdasarkan jumlah * harga satuan
-        $sub_total = $request->input('jumlah') * $harga_satuan;
-
-        DB::update('
-            UPDATE detail_pengadaan 
-            SET idpengadaan = ?, idbarang = ?, harga_satuan = ?, jumlah = ?, sub_total = ?
-            WHERE iddetail_pengadaan = ?', [
-            $request->input('idpengadaan'),
-            $request->input('idbarang'),
-            $harga_satuan,  // Harga satuan dari tabel barang
-            $request->input('jumlah'),
-            $sub_total,  // Subtotal yang sudah dihitung
-            $id,
-        ]);
-
-        return redirect()->route('detail_pengadaan.index')->with('success', 'Detail Pengadaan berhasil diperbarui.');
+    
+        // Hitung sub total
+        $harga_satuan = $validatedData['harga_satuan'] ?? null;
+        $jumlah = $validatedData['jumlah'] ?? null;
+        $sub_total = $harga_satuan && $jumlah ? $harga_satuan * $jumlah : null;
+    
+        $result = DB::select('SELECT fn_update_detail_pengadaan(?, ?, ?, ?, ?, ?) AS result', [
+            $iddetail_pengadaan,
+            $validatedData['idpengadaan'] ?? null,
+            $validatedData['idbarang'] ?? null,
+            $harga_satuan,
+            $jumlah,
+            $sub_total
+        ])[0]->result;
+    
+        if ($result > 0) {
+            return redirect()->route('detail_pengadaan.index')
+                ->with('success', 'Detail Pengadaan berhasil diupdate');
+        } else {
+            return back()->with('error', 'Gagal update detail pengadaan')
+                ->withInput();
+        }
     }
 
     public function destroy($id)

@@ -18,7 +18,7 @@ class DetailPenjualanController extends Controller
         // Ambil data pendukung
         $penjualans = DB::table('penjualan')->get();
         $barangs = DB::table('barang')->get();
-        
+
         return view('detail_penjualan.create', compact('penjualans', 'barangs'));
     }
 
@@ -51,48 +51,53 @@ class DetailPenjualanController extends Controller
     {
         // Ambil detail penjualan menggunakan query SQL
         $detail = DB::select('SELECT * FROM view_detail_penjualan WHERE iddetail_penjualan = ?', [$iddetail_penjualan])[0];
-    
+
         // Ambil daftar penjualan menggunakan query SQL
         $penjualans = DB::select('SELECT * FROM penjualan');
-    
+
         // Ambil daftar barang menggunakan query SQL
         $barangs = DB::select('SELECT * FROM barang');
-    
+
         return view('detail_penjualan.edit', compact('detail', 'penjualans', 'barangs'));
     }
 
     public function update(Request $request, $iddetail_penjualan)
     {
-        $request->validate([
+        // Validasi input
+        $validatedData = $request->validate([
             'idpenjualan' => 'required|exists:penjualan,idpenjualan',
             'idbarang' => 'required|exists:barang,idbarang',
-            'harga' => 'required|numeric|min:0',
-            'jumlah' => 'required|numeric|min:1'
+            'jumlah' => 'required|numeric|min:1',
+            'harga' => 'required|numeric|min:0'
         ]);
 
         try {
-            // Proses update manual karena SP tidak ada untuk update
-            DB::table('detail_penjualan')
-                ->where('iddetail_penjualan', $iddetail_penjualan)
-                ->update([
-                    'idpenjualan' => $request->idpenjualan,
-                    'idbarang' => $request->idbarang,
-                    'harga' => $request->harga,
-                    'jumlah' => $request->jumlah,
-                    'subtotal' => $request->harga * $request->jumlah
-                ]);
+            // Panggil fungsi update dengan parameter dari validasi
+            $result = DB::select('SELECT fn_update_detail_penjualan(?, ?, ?, ?, ?) AS result', [
+                $iddetail_penjualan,
+                $validatedData['idpenjualan'],
+                $validatedData['idbarang'],
+                $validatedData['jumlah'],
+                $validatedData['harga']
+            ]);
 
-            // Trigger update total penjualan
-            $detail = DB::table('detail_penjualan')
-                ->where('iddetail_penjualan', $iddetail_penjualan)
-                ->first();
+            // Ambil hasil dari fungsi
+            $rowsAffected = $result[0]->result;
 
-            $this->updatePenjualanTotal($detail->idpenjualan);
-
-            return redirect()->route('detail_penjualan.index')
-                ->with('success', 'Detail Penjualan berhasil diupdate');
+            // Cek hasil update
+            if ($rowsAffected > 0) {
+                return redirect()->route('detail_penjualan.index')
+                    ->with('success', 'Detail Penjualan berhasil diupdate');
+            } else {
+                return redirect()->back()
+                    ->with('error', 'Gagal update detail penjualan')
+                    ->withInput();
+            }
         } catch (\Exception $e) {
-            return back()->withErrors(['msg' => $e->getMessage()]);
+            // Tangani error yang mungkin terjadi
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
     }
 

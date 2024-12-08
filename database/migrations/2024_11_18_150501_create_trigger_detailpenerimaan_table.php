@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
@@ -63,6 +61,5 @@ return new class extends Migration
     {
         DB::unprepared("DROP TRIGGER IF EXISTS after_penerimaan_insert");
         DB::unprepared("DROP TRIGGER IF EXISTS after_penerimaan_delete");
-        DB::unprepared("DROP TRIGGER IF EXISTS after_penjualan_insert");
     }
 };

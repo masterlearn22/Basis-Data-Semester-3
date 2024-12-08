@@ -48,7 +48,7 @@ class DetailPenerimaanController extends Controller
             'idbarang' => 'required|numeric',
             'jumlah_terima' => 'required|numeric|min:1',
         ]);
-    
+
         try {
             // Panggil stored procedure untuk membuat detail penerimaan
             $result = DB::select('CALL sp_create_detail_penerimaan(?, ?, ?)', [
@@ -56,10 +56,10 @@ class DetailPenerimaanController extends Controller
                 $request->input('idbarang'),
                 $request->input('jumlah_terima')
             ]);
-    
+
             // Ambil ID detail penerimaan yang baru saja dibuat
             $idDetailPenerimaan = $result[0]->iddetail_penerimaan;
-    
+
             return redirect()->route('detail_penerimaan.index', ['idpenerimaan' => $request->input('idpenerimaan')])
                 ->with('success', 'Detail Penerimaan berhasil ditambahkan.');
         } catch (\Exception $e) {
@@ -67,7 +67,7 @@ class DetailPenerimaanController extends Controller
                 ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
-    
+
 
     public function edit($detail_penerimaan)
     {
@@ -95,49 +95,43 @@ class DetailPenerimaanController extends Controller
         ]);
     }
 
-    public function update(Request $request, $detail_penerimaan)
+    public function update(Request $request, $iddetail_penerimaan)
     {
         // Validasi input
         $validatedData = $request->validate([
-            'idbarang' => 'required|numeric',
-            'jumlah_terima' => 'required|numeric',
+            'idpenerimaan' => 'required|exists:penerimaan,idpenerimaan',
+            'iddetail_pengadaan' => 'required|exists:detail_pengadaan,iddetail_pengadaan',
+            'jumlah' => 'required|numeric|min:1'
         ]);
 
-        // Ambil harga barang dari database menggunakan raw SQL
-        $barang = DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$request->input('idbarang')]);
-
-        if (empty($barang)) {
-            return redirect()->route('detail_penerimaan.edit',  $detail_penerimaan)->with('error', 'Barang tidak ditemukan.');
-        }
-
-        // Hitung sub_total berdasarkan harga_satuan dan jumlah_terima
-        $sub_total = $barang[0]->harga * $request->input('jumlah_terima');
-
-        // Dapatkan harga satuan dari barang
-        $harga_satuan = $barang[0]->harga;
-
         try {
-            // Update data detail_penerimaan di database menggunakan raw SQL
-            DB::update(
-                '
-            UPDATE detail_penerimaan
-            SET idbarang = ?, harga_satuan = ?, jumlah_terima = ?, sub_total = ?, updated_at = NOW()
-            WHERE iddetail_penerimaan = ?',
-                [
-                    $request->input('idbarang'),  // Make sure this is taken from the correct input
-                    $harga_satuan,
-                    $request->input('jumlah_terima'),
-                    $sub_total,
-                    $detail_penerimaan,
-                ]
-            );
+            // Panggil fungsi update dengan parameter dari validasi
+            $result = DB::select('SELECT fn_update_detail_penerimaan(?, ?, ?, ?) AS result', [
+                $iddetail_penerimaan,
+                $validatedData['idpenerimaan'],
+                $validatedData['iddetail_pengadaan'],
+                $validatedData['jumlah']
+            ]);
 
-            return redirect()->route('detail_penerimaan.index')->with('success', 'Detail Penerimaan berhasil diperbarui.');
+            // Ambil hasil dari fungsi
+            $rowsAffected = $result[0]->result;
+
+            // Cek hasil update
+            if ($rowsAffected > 0) {
+                return redirect()->route('detail_penerimaan.index')
+                    ->with('success', 'Detail Penerimaan berhasil diupdate');
+            } else {
+                return redirect()->back()
+                    ->with('error', 'Gagal update detail penerimaan')
+                    ->withInput();
+            }
         } catch (\Exception $e) {
-            return redirect()->route('detail_penerimaan.edit', $detail_penerimaan)->with('error', 'Terjadi kesalahan saat memperbarui: ' . $e->getMessage());
+            // Tangani error yang mungkin terjadi
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
     }
-
 
     public function destroy($id)
     {

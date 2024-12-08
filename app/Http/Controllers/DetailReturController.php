@@ -15,10 +15,10 @@ class DetailReturController extends Controller
 
     public function create()
     {
-        $returs=DB::SELECT('SELECT retur.* FROM retur');
-        $barangs=DB::SELECT('SELECT barang.* FROM barang');
-        $detail_penerimaans=DB::SELECT('SELECT detail_penerimaan.* FROM detail_penerimaan');
-        return view('detail_retur.create',compact('returs','barangs','detail_penerimaans'));
+        $returs = DB::SELECT('SELECT retur.* FROM retur');
+        $barangs = DB::SELECT('SELECT barang.* FROM barang');
+        $detail_penerimaans = DB::SELECT('SELECT detail_penerimaan.* FROM detail_penerimaan');
+        return view('detail_retur.create', compact('returs', 'barangs', 'detail_penerimaans'));
     }
 
     public function store(Request $request)
@@ -31,7 +31,7 @@ class DetailReturController extends Controller
             'alasan' => 'required|string',
             'jumlah' => 'required|numeric|min:1',
         ]);
-    
+
         try {
             // Panggil stored procedure untuk membuat detail retur
             $result = DB::select('CALL sp_create_detail_retur(?, ?, ?, ?, ?)', [
@@ -41,10 +41,10 @@ class DetailReturController extends Controller
                 $request->input('alasan'),
                 $request->input('jumlah')
             ]);
-    
+
             // Ambil ID detail retur yang baru saja dibuat
             $idDetailRetur = $result[0]->iddetail_retur;
-    
+
             return redirect()->route('detail_retur.index', ['idretur' => $request->input('idretur')])
                 ->with('success', 'Detail Retur berhasil ditambahkan.');
         } catch (\Exception $e) {
@@ -56,36 +56,54 @@ class DetailReturController extends Controller
     public function edit($id)
     {
         $detail_retur = DB::select('SELECT * FROM detail_retur WHERE iddetail_retur = ?', [$id]);
-        $returs=DB::SELECT('SELECT retur.* FROM retur');
-        $barangs=DB::SELECT('SELECT barang.* FROM barang');
-        $detail_penerimaans=DB::SELECT('SELECT detail_penerimaan.* FROM detail_penerimaan');
+        $returs = DB::SELECT('SELECT retur.* FROM retur');
+        $barangs = DB::SELECT('SELECT barang.* FROM barang');
+        $detail_penerimaans = DB::SELECT('SELECT detail_penerimaan.* FROM detail_penerimaan');
         if (!$detail_retur) {
             return redirect()->route('detail_retur.index')->with('error', 'Detail Retur tidak ditemukan.');
         }
-        $detail_retur=$detail_retur[0];
-        return view('detail_retur.edit', compact('detail_retur','returs','barangs','detail_penerimaans'));
+        $detail_retur = $detail_retur[0];
+        return view('detail_retur.edit', compact('detail_retur', 'returs', 'barangs', 'detail_penerimaans'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $iddetail_retur)
     {
+        // Validasi input
         $validatedData = $request->validate([
-            'idretur' => 'required|numeric',
-            'idbarang' => 'required|numeric',
-            'iddetail_penerimaan'=>'required',
+            'idretur' => 'required|exists:retur,idretur',
+            'idbarang' => 'required|exists:barang,idbarang',
+            'iddetail_penerimaan' => 'required|exists:detail_penerimaan,iddetail_penerimaan',
             'alasan' => 'required|string',
-            'jumlah' => 'required|numeric',
+            'jumlah' => 'required|numeric|min:1'
         ]);
 
-        DB::update('UPDATE detail_retur SET idretur = ?, idbarang = ?, iddetail_penerimaan=?, alasan = ?, jumlah = ?, updated_at = NOW() WHERE iddetail_retur = ?', [
-            $request->input('idretur'),
-            $request->input('idbarang'),
-            $request->input('iddetail_penerimaan'),
-            $request->input('alasan'),
-            $request->input('jumlah'),
-            $id,
-        ]);
+        try {
+            // Panggil fungsi update dengan parameter dari validasi
+            $result = DB::select('SELECT fn_update_detail_retur(?, ?, ?, ?, ?) AS result', [
+                $iddetail_retur,
+                $validatedData['idretur'],
+                $validatedData['idbarang'],
+                $validatedData['jumlah']
+            ]);
 
-        return redirect()->route('detail_retur.index')->with('success', 'Detail Retur berhasil diperbarui.');
+            // Ambil hasil dari fungsi
+            $rowsAffected = $result[0]->result;
+
+            // Cek hasil update
+            if ($rowsAffected > 0) {
+                return redirect()->route('detail_retur.index')
+                    ->with('success', 'Detail Retur berhasil diupdate');
+            } else {
+                return redirect()->back()
+                    ->with('error', 'Gagal update detail retur')
+                    ->withInput();
+            }
+        } catch (\Exception $e) {
+            // Tangani error yang mungkin terjadi
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function destroy($id)

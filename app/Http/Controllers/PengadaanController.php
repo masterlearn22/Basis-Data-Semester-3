@@ -30,7 +30,7 @@ class PengadaanController extends Controller
             'iduser' => 'required|numeric',
             'status' => 'required|in:0,1',
         ]);
-    
+
         // Panggil stored procedure untuk membuat pengadaan
         $result = DB::select('CALL sp_create_pengadaan(?, ?, ?, ?)', [
             $request->input('idvendor'),
@@ -38,10 +38,10 @@ class PengadaanController extends Controller
             $request->input('iduser'),
             $request->input('status')
         ]);
-    
+
         // Ambil ID pengadaan yang baru saja dibuat
         $idpengadaan = $result[0]->idpengadaan;
-    
+
         return redirect()->route('detail_pengadaan.create', ['idpengadaan' => $idpengadaan])
             ->with('success', 'Pengadaan berhasil dibuat. Silakan tambahkan detail pengadaan.');
     }
@@ -62,41 +62,39 @@ class PengadaanController extends Controller
     }
 
 
-    public function update(Request $request, $id)
-    {
-        $validatedData = $request->validate([
-            'idvendor' => 'required|numeric',
-            'ppn' => 'required|numeric',
-            'iduser' => 'required|numeric',
-            'status' => 'required|in:0,1',
-        ]);
+    public function update(Request $request, $idpengadaan)
+{
+    $validatedData = $request->validate([
+        'idvendor' => 'nullable|exists:vendor,idvendor',
+        'status' => 'nullable|in:0,1',
+        'iduser' => 'nullable|exists:users,iduser',
+        'subtotal_awal' => 'nullable|numeric|min:0',
+        'ppn' => 'nullable|numeric|min:0|max:100'
+    ]);
 
-        // Menghitung subtotal_nilai dari detail_pengadaan berdasarkan idpengadaan yang sama
-        $subtotal_nilai = DB::select(
-            '
-            SELECT SUM(sub_total) AS subtotal_nilai
-            FROM detail_pengadaan
-            WHERE idpengadaan = ?',
-            [$id]
-        ); // Default ke 0 jika tidak ada hasil
-        $subtotal_nilai = $subtotal_nilai[0]->subtotal_nilai ?? 0;
-        // Menghitung total nilai dengan PPN
-        $total_nilai = $subtotal_nilai +(( $request->input('ppn')/100) *$subtotal_nilai);
+    // Hitung total nilai
+    $subtotal = $validatedData['subtotal_awal'] ?? null;
+    $ppn = $validatedData['ppn'] ?? null;
+    $total_nilai = $subtotal ? $subtotal * (1 + ($ppn / 100)) : null;
 
-        DB::statement('
-            UPDATE pengadaan 
-            SET idvendor = ?, subtotal_nilai = ?, total_nilai = ?, ppn = ?, iduser = ?, status = ?, updated_at = NOW() 
-            WHERE idpengadaan = ?', [
-            $request->input('idvendor'),
-            $subtotal_nilai,
-            $total_nilai,
-            $request->input('ppn'),
-            $request->input('iduser'),
-            $request->input('status'),
-            $id,
-        ]);
-        return redirect()->route('pengadaan.index')->with('success', 'Pengadaan berhasil diperbarui.');
+    $result = DB::select('SELECT fn_update_pengadaan(?, ?, ?, ?, ?, ?, ?) AS result', [
+        $idpengadaan,
+        $validatedData['idvendor'] ?? null,
+        $validatedData['status'] ?? null,
+        $validatedData['iduser'] ?? null,
+        $subtotal,
+        $ppn,
+        $total_nilai
+    ])[0]->result;
+
+    if ($result > 0) {
+        return redirect()->route('pengadaan.index')
+            ->with('success', 'Pengadaan berhasil diupdate');
+    } else {
+        return back()->with('error', 'Gagal update pengadaan')
+            ->withInput();
     }
+}
 
     public function destroy($id)
     {
@@ -111,5 +109,4 @@ class PengadaanController extends Controller
 
         return redirect()->route('detail_pengadaan.index')->with('success', 'Detail Pengadaan berhasil dihapus.');
     }
-
 }

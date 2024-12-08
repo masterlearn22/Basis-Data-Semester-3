@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
@@ -14,8 +15,8 @@ class RoleController extends Controller
     }
 
     public function create()
-    {   
-        
+    {
+
         return view('role.create');
     }
 
@@ -24,45 +25,52 @@ class RoleController extends Controller
         $validatedData = $request->validate([
             'nama_role' => 'required',
         ]);
-    
+
         DB::statement('CALL sp_create_role(?)', [
             $request->input('nama_role'),
         ]);
-    
+
         return redirect()->route('role.index')->with('success', 'Role berhasil ditambahkan.');
     }
-    
+
 
     public function edit($id)
     {
         $role = DB::select('SELECT * FROM role WHERE idrole = ?', [$id]);
-    
+
         // Pastikan ada hasil yang didapat
         if (empty($role)) {
             return redirect()->route('role.index')->with('error', 'Role tidak ditemukan.');
         }
-    
+
         // Ambil elemen pertama dari hasil array
         $role = $role[0];
-    
+
         return view('role.edit', compact('role'));
     }
-    
+
 
 
     public function update(Request $request, $id)
-    {
-        $validatedData = $request->validate([
-            'nama_role' => 'required',
-        ]);
+{
+    $validatedData = $request->validate([
+        'nama_role' => 'nullable|string|max:255'
+    ]);
 
-        DB::update('UPDATE role SET nama_role = ? WHERE idrole = ?', [
-            $request->input('nama_role'),
-            $id,
-        ]);
+        $result = DB::select('SELECT fn_update_role(?, ?) AS status', [
+            $id, 
+            $validatedData['nama_role']
+        ])[0]->status;
 
-        return redirect()->route('role.index')->with('success', 'Role berhasil diperbarui.');
-    }
+        if ($result > 0) {
+            return redirect()->route('role.index')
+                ->with('success', 'Role berhasil diperbarui');
+        } else {
+            return back()->with('error', 'Gagal memperbarui role')
+                ->withInput();
+        }
+    
+}
 
     public function destroy($id)
     {

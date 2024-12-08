@@ -27,16 +27,16 @@ class VendorController extends Controller
             'badan_hukum' => 'required|size:1',
             'status' => 'required|size:1',
         ]);
-    
+
         DB::statement('CALL sp_create_vendor(?, ?, ?)', [
             $request->input('nama_vendor'),
             $request->input('badan_hukum'),
             $request->input('status'),
         ]);
-    
+
         return redirect()->route('vendor.index')->with('success', 'Vendor berhasil ditambahkan.');
     }
-    
+
 
     public function show($id)
     {
@@ -62,24 +62,35 @@ class VendorController extends Controller
         return view('vendor.edit', ['vendor' => $vendor[0]]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $idvendor)
     {
-        // Validasi data yang diinput
+        // Validasi input
+       // dd($request->all());
         $validatedData = $request->validate([
-            'nama_vendor' => 'required|max:100',
-            'badan_hukum' => 'required|size:1',
-            'status' => 'required|size:1'
+            'nama_vendor' => 'nullable|string|max:100',
+            'badan_hukum' => 'nullable',
+            'status' => 'nullable|in:0,1'
         ]);
 
-        // Update data di database
-        DB::update('UPDATE vendor SET nama_vendor = ?, badan_hukum = ?, status = ? WHERE idvendor = ?', [
-            $request->input('nama_vendor'),
-            $request->input('badan_hukum'),
-            $request->input('status'),
-            $id,
-        ]);
+        // Panggil fungsi update dari database
+        $result = DB::select('SELECT fn_update_vendor(?, ?, ?, ?) AS result', [
+            $idvendor,
+            $validatedData['nama_vendor'],
+            $validatedData['badan_hukum'],
+            $validatedData['status']
+        ])[0]->result;
 
-        return redirect()->route('vendor.index')->with('success', 'Vendor berhasil diperbarui.');
+        // Cek hasil update
+        if ($result === 1) {
+            return redirect()->route('vendor.index')
+                ->with('success', 'Vendor berhasil diupdate');
+        } elseif ($result === -2) {
+            return back()->with('error', 'Nama vendor sudah ada')
+                ->withInput();
+        } else {
+            return back()->with('error', 'Gagal update vendor')
+                ->withInput();
+        }
     }
 
     public function destroy($id)

@@ -4,7 +4,7 @@
 @section('content')
     <div class="container">
         <h2>List of Pengadaan</h2>
-        <a href="{{ route('pengadaan.create') }}" class="btn btn-primary mb-3">Add Pengadaan</a>
+        <a href="{{ route('pengadaan.create') }}" class="mb-3 btn btn-primary">Add Pengadaan</a>
         <table class="table table-bordered">
             <thead>
                 <tr>
