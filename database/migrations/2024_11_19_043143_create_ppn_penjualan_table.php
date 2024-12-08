@@ -13,30 +13,6 @@ return new class extends Migration
         DB::unprepared('DROP TRIGGER IF EXISTS trg_after_detail_penjualan_delete');
         DB::unprepared('DROP TRIGGER IF EXISTS trg_after_detail_penjualan_update');
 
-        // Trigger update penjualan
-        DB::unprepared('
-        CREATE TRIGGER after_penjualan_update
-        AFTER UPDATE ON penjualan
-        FOR EACH ROW
-        BEGIN
-            DECLARE ppn_value DECIMAL(10,2);
-
-            -- Ambil persen dari margin_penjualan
-            SELECT IFNULL(persen, 0) INTO ppn_value
-            FROM margin_penjualan
-            WHERE idmargin_penjualan = NEW.idmargin_penjualan;
-
-            -- Hindari rekursif dengan menggunakan kondisi
-            IF ppn_value > 0 THEN
-                UPDATE penjualan
-                SET 
-                    total_nilai = NEW.subtotal_nilai + (NEW.subtotal_nilai * (ppn_value / 100)),
-                    ppn = NEW.subtotal_nilai * (ppn_value / 100)
-                WHERE idpenjualan = NEW.idpenjualan;
-            END IF;
-        END;
-        ');
-
         // Trigger insert detail penjualan
         DB::unprepared('
         CREATE TRIGGER trg_after_detail_penjualan_insert 
@@ -44,6 +20,10 @@ return new class extends Migration
         FOR EACH ROW
         BEGIN
             DECLARE v_sisa_stok INT DEFAULT 0;
+            DECLARE v_subtotal_penjualan INT DEFAULT 0;
+            DECLARE v_margin_rate DOUBLE DEFAULT 0;
+            DECLARE v_ppn_value INT DEFAULT 0;
+            DECLARE v_total_value INT DEFAULT 0;
 
             # Hitung sisa stok dari kartu_stok sebelumnya
             SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_sisa_stok
@@ -71,21 +51,29 @@ return new class extends Migration
                 NEW.idpenjualan, 
                 NEW.idbarang
             );
-        END;
-        ');
 
-        // Trigger delete detail penjualan
-        DB::unprepared('
-        CREATE TRIGGER trg_after_detail_penjualan_delete
-        AFTER DELETE ON detail_penjualan
-        FOR EACH ROW
-        BEGIN
-            # Hapus kartu stok untuk transaksi penjualan
-            DELETE FROM kartu_stok 
-            WHERE 
-                jenis_transaksi = "J" 
-                AND id_transaksi = OLD.idpenjualan 
-                AND idbarang = OLD.idbarang;
+            # Hitung total subtotal untuk penjualan ini
+            SELECT COALESCE(SUM(jumlah * harga_satuan), 0) INTO v_subtotal_penjualan
+            FROM detail_penjualan
+            WHERE idpenjualan = NEW.idpenjualan;
+
+            # Ambil margin rate (PPN) dari margin_penjualan
+            SELECT COALESCE(persen, 0) INTO v_margin_rate
+            FROM margin_penjualan m
+            JOIN penjualan p ON p.idmargin_penjualan = m.idmargin_penjualan
+            WHERE p.idpenjualan = NEW.idpenjualan;
+
+            # Hitung PPN
+            SET v_ppn_value = FLOOR(v_subtotal_penjualan * (v_margin_rate / 100));
+            SET v_total_value = v_subtotal_penjualan + v_ppn_value;
+
+            # Update penjualan dengan subtotal, ppn, dan total baru
+            UPDATE penjualan 
+            SET 
+                subtotal_nilai = v_subtotal_penjualan,
+                ppn = v_ppn_value,
+                total_nilai = v_total_value
+            WHERE idpenjualan = NEW.idpenjualan;
         END;
         ');
 
@@ -95,10 +83,14 @@ return new class extends Migration
         AFTER UPDATE ON detail_penjualan
         FOR EACH ROW
         BEGIN
-            DECLARE v_current_stock INT;
+            DECLARE v_sisa_stok INT DEFAULT 0;
+            DECLARE v_subtotal_penjualan INT DEFAULT 0;
+            DECLARE v_margin_rate DOUBLE DEFAULT 0;
+            DECLARE v_ppn_value INT DEFAULT 0;
+            DECLARE v_total_value INT DEFAULT 0;
 
-            # Hitung ulang stok
-            SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_current_stock
+            # Hitung sisa stok dari kartu_stok sebelumnya
+            SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_sisa_stok
             FROM kartu_stok 
             WHERE idbarang = NEW.idbarang;
 
@@ -106,11 +98,77 @@ return new class extends Migration
             UPDATE kartu_stok 
             SET 
                 keluar = NEW.jumlah,
-                stock = v_current_stock - NEW.jumlah
+                stock = v_sisa_stok - NEW.jumlah
             WHERE 
                 jenis_transaksi = "J"
                 AND id_transaksi = NEW.idpenjualan 
                 AND idbarang = NEW.idbarang;
+
+            # Hitung total subtotal untuk penjualan ini
+            SELECT COALESCE(SUM(jumlah * harga_satuan), 0) INTO v_subtotal_penjualan
+            FROM detail_penjualan
+            WHERE idpenjualan = NEW.idpenjualan;
+
+            # Ambil margin rate (PPN) dari margin_penjualan
+            SELECT COALESCE(persen, 0) INTO v_margin_rate
+            FROM margin_penjualan m
+            JOIN penjualan p ON p.idmargin_penjualan = m.idmargin_penjualan
+            WHERE p.idpenjualan = NEW.idpenjualan;
+
+            # Hitung PPN
+            SET v_ppn_value = FLOOR(v_subtotal_penjualan * (v_margin_rate / 100));
+            SET v_total_value = v_subtotal_penjualan + v_ppn_value;
+
+            # Update penjualan dengan subtotal, ppn, dan total baru
+            UPDATE penjualan 
+            SET 
+                subtotal_nilai = v_subtotal_penjualan,
+                ppn = v_ppn_value,
+                total_nilai = v_total_value
+            WHERE idpenjualan = NEW.idpenjualan;
+        END;
+        ');
+
+        // Trigger delete detail penjualan
+        DB::unprepared('
+        CREATE TRIGGER trg_after_detail_penjualan_delete
+        AFTER DELETE ON detail_penjualan
+        FOR EACH ROW
+        BEGIN
+            DECLARE v_subtotal_penjualan INT DEFAULT 0;
+            DECLARE v_margin_rate DOUBLE DEFAULT 0;
+            DECLARE v_ppn_value INT DEFAULT 0;
+            DECLARE v_total_value INT DEFAULT 0;
+
+            # Hapus kartu stok untuk transaksi penjualan
+            DELETE FROM kartu_stok 
+            WHERE 
+                jenis_transaksi = "J" 
+                AND id_transaksi = OLD.idpenjualan 
+                AND idbarang = OLD.idbarang;
+
+            # Hitung total subtotal untuk penjualan ini
+            SELECT COALESCE(SUM(jumlah * harga_satuan), 0) INTO v_subtotal_penjualan
+            FROM detail_penjualan
+            WHERE idpenjualan = OLD.idpenjualan;
+
+            # Ambil margin rate (PPN) dari margin_penjualan
+            SELECT COALESCE(persen, 0) INTO v_margin_rate
+            FROM margin_penjualan m
+            JOIN penjualan p ON p.idmargin_penjualan = m.idmargin_penjualan
+            WHERE p.idpenjualan = OLD.idpenjualan;
+
+            # Hitung PPN
+            SET v_ppn_value = FLOOR(v_subtotal_penjualan * (v_margin_rate / 100));
+            SET v_total_value = v_subtotal_penjualan + v_ppn_value;
+
+            # Update penjualan dengan subtotal, pp n, ppn, dan total baru
+            UPDATE penjualan 
+            SET 
+                subtotal_nilai = v_subtotal_penjualan,
+                ppn = v_ppn_value,
+                total_nilai = v_total_value
+            WHERE idpenjualan = OLD.idpenjualan;
         END;
         ');
     }

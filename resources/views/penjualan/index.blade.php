@@ -24,7 +24,7 @@
                     <tr>
                         <td>{{ $penjualan->subtotal_nilai }}</td>
                         <td>{{ $penjualan->ppn }}</td>
-                        <td>{{ $penjualan->persen }}</td>
+                        <td>{{ $penjualan->persen }}%</td>
                         <td>{{ $penjualan->total_nilai }}</td>
                         <td>{{ $penjualan->username }}</td>
                         <td>

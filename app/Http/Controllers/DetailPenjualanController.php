@@ -27,7 +27,7 @@ class DetailPenjualanController extends Controller
         $request->validate([
             'idpenjualan' => 'required|exists:penjualan,idpenjualan',
             'idbarang' => 'required|exists:barang,idbarang',
-            'harga_satuan' => 'required|numeric|min:0',
+            'harga' => 'required|numeric|min:0',
             'jumlah' => 'required|numeric|min:1'
         ]);
 
@@ -35,7 +35,7 @@ class DetailPenjualanController extends Controller
             DB::select('CALL sp_create_detail_penjualan(?, ?, ?, ?, ?)', [
                 $request->idpenjualan,
                 $request->idbarang,
-                $request->harga_satuan,
+                $request->harga,
                 $request->jumlah,
                 0 // sub_total diisi 0 untuk dihitung otomatis
             ]);
@@ -49,13 +49,15 @@ class DetailPenjualanController extends Controller
 
     public function edit($iddetail_penjualan)
     {
-        $detail = DB::table('view_detail_penjualan')
-            ->where('iddetail_penjualan', $iddetail_penjualan)
-            ->first();
-
-        $penjualans = DB::table('penjualan')->get();
-        $barangs = DB::table('barang')->get();
-
+        // Ambil detail penjualan menggunakan query SQL
+        $detail = DB::select('SELECT * FROM view_detail_penjualan WHERE iddetail_penjualan = ?', [$iddetail_penjualan])[0];
+    
+        // Ambil daftar penjualan menggunakan query SQL
+        $penjualans = DB::select('SELECT * FROM penjualan');
+    
+        // Ambil daftar barang menggunakan query SQL
+        $barangs = DB::select('SELECT * FROM barang');
+    
         return view('detail_penjualan.edit', compact('detail', 'penjualans', 'barangs'));
     }
 
@@ -64,7 +66,7 @@ class DetailPenjualanController extends Controller
         $request->validate([
             'idpenjualan' => 'required|exists:penjualan,idpenjualan',
             'idbarang' => 'required|exists:barang,idbarang',
-            'harga_satuan' => 'required|numeric|min:0',
+            'harga' => 'required|numeric|min:0',
             'jumlah' => 'required|numeric|min:1'
         ]);
 
@@ -75,9 +77,9 @@ class DetailPenjualanController extends Controller
                 ->update([
                     'idpenjualan' => $request->idpenjualan,
                     'idbarang' => $request->idbarang,
-                    'harga_satuan' => $request->harga_satuan,
+                    'harga' => $request->harga,
                     'jumlah' => $request->jumlah,
-                    'subtotal' => $request->harga_satuan * $request->jumlah
+                    'subtotal' => $request->harga * $request->jumlah
                 ]);
 
             // Trigger update total penjualan

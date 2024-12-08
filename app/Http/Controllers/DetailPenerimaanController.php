@@ -84,7 +84,7 @@ class DetailPenerimaanController extends Controller
 
         // Ambil harga_satuan barang yang dipilih dari session atau dari detail penerimaan
         $selectedIdBarang = $detail_penerimaan[0]->idbarang; // Use the idbarang from the detail penerimaan
-        $selectedBarang = session('selectedBarang') ?: DB::select('SELECT harga_satuan FROM barang WHERE idbarang = ?', [$selectedIdBarang])[0];
+        $selectedBarang = session('selectedBarang') ?: DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$selectedIdBarang])[0];
 
         return view('detail_penerimaan.edit', [
             'detail_penerimaan' => $detail_penerimaan[0],

@@ -20,9 +20,12 @@ return new class extends Migration {
             'sp_update_penjualan_subtotal'
         ];
 
+
         foreach ($procedures as $procedure) {
             DB::statement("DROP PROCEDURE IF EXISTS $procedure");
         }
+
+        DB::statement('DROP FUNCTION IF EXISTS fn_update_penjualan_subtotal');
 
         // Stored Procedure untuk Role
         DB::statement('
@@ -273,25 +276,22 @@ return new class extends Migration {
         BEGIN
             DECLARE v_stok_tersedia INT DEFAULT 0;
             DECLARE v_calculated_subtotal INT;
-            DECLARE v_margin_rate DOUBLE;
-            DECLARE v_ppn_value INT;
-            DECLARE v_total_value INT;
-            DECLARE v_current_subtotal INT;
-
+            DECLARE v_iddetail_penjualan INT;
+    
             # Hitung subtotal berdasarkan jumlah * harga_satuan
             SET v_calculated_subtotal = p_jumlah * p_harga_satuan;
-
+    
             # Cek stok barang - hitung stok tersedia dari kartu_stok
             SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_stok_tersedia
             FROM kartu_stok 
             WHERE idbarang = p_idbarang;
-
+    
             # Validasi stok
             IF p_jumlah > v_stok_tersedia THEN
                 SIGNAL SQLSTATE "45000" 
                 SET MESSAGE_TEXT = "Stok tidak mencukupi";
             END IF;
-
+    
             # Insert detail penjualan
             INSERT INTO detail_penjualan (
                 idpenjualan, 
@@ -306,68 +306,11 @@ return new class extends Migration {
                 p_jumlah, 
                 v_calculated_subtotal
             );
-
-            # Hitung total subtotal dari detail penjualan
-            SELECT COALESCE(SUM(subtotal), 0) INTO v_current_subtotal
-            FROM detail_penjualan
-            WHERE idpenjualan = p_idpenjualan;
-
-            # Ambil margin rate
-            SELECT persen INTO v_margin_rate
-            FROM margin_penjualan m
-            JOIN penjualan p ON p.idmargin_penjualan = m.idmargin_penjualan
-            WHERE p.idpenjualan = p_idpenjualan;
-
-            # Hitung PPN
-            SET v_ppn_value = FLOOR(v_current_subtotal * (v_margin_rate / 100));
-            SET v_total_value = v_current_subtotal + v_ppn_value;
-
-            # Update penjualan tanpa trigger
-            UPDATE penjualan 
-            SET 
-                subtotal_nilai = v_current_subtotal,
-                ppn = v_ppn_value,
-                total_nilai = v_total_value
-            WHERE idpenjualan = p_idpenjualan;
-
-            # Kembalikan ID detail penjualan
-            SELECT LAST_INSERT_ID() AS iddetail_penjualan;
+            
         END;
         ');
 
-        DB::statement('
-        CREATE PROCEDURE sp_update_penjualan_subtotal(
-            IN p_idpenjualan INT
-        )
-        BEGIN
-            DECLARE v_current_subtotal INT;
-            DECLARE v_margin_rate DOUBLE;
-            DECLARE v_ppn_value INT;
-            DECLARE v_total_value INT;
+    // Fungsi update subtotal penjualan
 
-            # Hitung total subtotal dari detail penjualan (jumlah * harga_satuan)
-            SELECT COALESCE(SUM(jumlah * harga_satuan), 0) INTO v_current_subtotal
-            FROM detail_penjualan
-            WHERE idpenjualan = p_idpenjualan;
-
-            # Ambil margin rate
-            SELECT persen INTO v_margin_rate
-            FROM margin_penjualan m
-            JOIN penjualan p ON p.idmargin_penjualan = m.idmargin_penjualan
-            WHERE p.idpenjualan = p_idpenjualan;
-
-            # Hitung PPN
-            SET v_ppn_value = FLOOR(v_current_subtotal * (v_margin_rate / 100));
-            SET v_total_value = v_current_subtotal + v_ppn_value;
-
-            # Update penjualan
-            UPDATE penjualan 
-            SET 
-                subtotal_nilai = v_current_subtotal,
-                ppn = v_ppn_value,
-                total_nilai = v_total_value
-            WHERE idpenjualan = p_idpenjualan;
-        END;
-        ');
     }
 };

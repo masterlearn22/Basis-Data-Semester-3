@@ -9,13 +9,13 @@
             @csrf
             @method('PUT')
             <div class="form-group">
-                <label for="subtotal_awal">Subtotal Awal</label>
-                <input type="number" class="form-control" id="subtotal_awal" name="subtotal_awal" value="{{ $penjualan->subtotal_awal }}" step="0.01" required>
+                <label for="subtotal_nilai">Subtotal Nilai</label>
+                <input type="number" class="form-control" id="subtotal_nilai" name="subtotal_nilai" value="{{ $penjualan->subtotal_nilai }}" step="0.01" required>
             </div>
 
             <div class="form-group">
-                <label for="subtotal_akhir">Subtotal Akhir</label>
-                <input type="number" class="form-control" id="subtotal_akhir" name="subtotal_akhir" value="{{ $penjualan->subtotal_akhir }}" step="0.01" required>
+                <label for="total_nilai">Total Nilai</label>
+                <input type="number" class="form-control" id="total_nilai" name="total_nilai" value="{{ $penjualan->total_nilai }}" step="0.01" required>
             </div>
 
             <div class="form-group">

@@ -20,17 +20,6 @@
             </div>
 
             <div class="form-group">
-                <label for="idbarang">Barang</label>
-                <select class="form-control" id="idbarang" name="idbarang">
-                    @foreach($barangs as $barang)
-                        <option value="{{ $barang->idbarang }}" {{ $detail_retur->idbarang == $barang->idbarang ? 'selected' : '' }}>
-                            {{ $barang->nama }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group">
                 <label for="iddetail_penerimaan">Detail Penerimaan</label>
                 <select class="form-control" id="iddetail_penerimaan" name="iddetail_penerimaan">
                     @foreach($detail_penerimaans as $detail_penerimaan)

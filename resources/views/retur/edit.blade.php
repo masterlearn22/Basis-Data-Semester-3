@@ -30,11 +30,6 @@
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="jumlah">Jumlah</label>
-                <input type="number" class="form-control" id="jumlah" name="jumlah" value="{{ $retur->jumlah }}" required>
-            </div>
-
             <button type="submit" class="btn btn-primary">Update Retur</button>
         </form>
     </div>

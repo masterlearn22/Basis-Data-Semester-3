@@ -46,13 +46,19 @@ class PenjualanController extends Controller
 
     public function edit($id)
     {
-        $penjualan = DB::select('SELECT * FROM penjualan WHERE idpenjualan = ?', [$id]);
-
+        // Ambil data penjualan dengan mengambil elemen pertama
+        $penjualan = DB::select('SELECT * FROM penjualan WHERE idpenjualan = ?', [$id])[0];
+    
+        // Ambil data margin penjualan dan users
+        $margin_penjualans = DB::select('SELECT * FROM margin_penjualan');
+        $users = DB::select('SELECT * FROM users');
+    
         if (!$penjualan) {
             return redirect()->route('penjualan.index')->with('error', 'Penjualan tidak ditemukan.');
         }
-
-        return view('penjualan.edit', compact('penjualan'));
+    
+        // Kirim semua variabel yang diperlukan ke view
+        return view('penjualan.edit', compact('penjualan', 'margin_penjualans', 'users'));
     }
 
     public function update(Request $request, $id)
