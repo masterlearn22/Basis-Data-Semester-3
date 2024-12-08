@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-class CreateTriggerUpdateSubtotalNilai extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -108,4 +108,4 @@ END;
         DB::statement('DROP TRIGGER IF EXISTS update_subtotal_nilai_after_update');
         DB::statement('DROP TRIGGER IF EXISTS update_subtotal_nilai_after_delete');
     }
-}
+};

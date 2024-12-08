@@ -59,31 +59,41 @@ class BarangController extends Controller
         return view('barang.edit', compact('barang', 'satuans'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $idbarang)
     {
-        $validatedData = $request->validate([
-            'jenis' => 'required',
-            'nama' => 'required',
-            'status' => 'required',
-            'harga' => 'required|numeric',
-            'idsatuan' => 'required'
+        // Panggil function SQL untuk update
+        $result = DB::select('SELECT fn_update_barang(?, ?, ?, ?, ?, ?) AS rows_affected', [
+            $idbarang,
+            $request->jenis,
+            $request->nama,
+            $request->status,
+            $request->harga,
+            $request->idsatuan
         ]);
 
-        DB::update('UPDATE barang SET jenis=?, nama = ?, status = ?, harga = ?, idsatuan=? WHERE idbarang = ?', [
-            $request->input('jenis'),
-            $request->input('nama'),
-            $request->input('status'),
-            $request->input('harga'),
-            $request->input('idsatuan'),
-            $id,
-        ]);
-
-        return redirect()->route('barang.index')->with('success', 'Barang berhasil diperbarui.');
+        // Cek hasil
+        $rowsAffected = $result[0]->rows_affected;
+        
+        if ($rowsAffected > 0) {
+            return redirect()->back()->with('success', 'Barang berhasil diupdate');
+        } else {
+            return redirect()->back()->with('error', 'Gagal update barang');
+        }
     }
 
-    public function destroy($id)
+    public function destroy($idbarang)
     {
-        DB::delete('DELETE FROM barang WHERE idbarang = ?', [$id]);
-        return redirect()->route('barang.index')->with('success', 'Barang berhasil dihapus.');
+        // Panggil function SQL untuk delete
+        $result = DB::select('SELECT fn_delete_barang(?) AS rows_affected', [$idbarang]);
+        
+        $rowsAffected = $result[0]->rows_affected;
+        
+        if ($rowsAffected > 0) {
+            return redirect()->back()->with('success', 'Barang berhasil dihapus');
+        } elseif ($rowsAffected == -1) {
+            return redirect()->back()->with('error', 'Barang tidak bisa dihapus karena sudah digunakan dalam transaksi');
+        } else {
+            return redirect()->back()->with('error', 'Gagal menghapus barang');
+        }
     }
 }
