@@ -16,10 +16,10 @@
             <tbody>
                 @foreach($kartu_stoks as $kartu_stok)
                     <tr>
-                        <td>{{ $kartu_stok->nama }}</td>
-                        <td>{{ $kartu_stok->masuk }}</td>
-                        <td>{{ $kartu_stok->keluar }}</td>
-                        <td>{{ $kartu_stok->stock }}</td>
+                        <td>{{ $kartu_stok->nama_barang }}</td>
+                        <td>{{ $kartu_stok->total_masuk }}</td>
+                        <td>{{ $kartu_stok->total_keluar }}</td>
+                        <td>{{ $kartu_stok->stok_saat_ini}}</td>
                     </tr>
                 @endforeach
             </tbody>

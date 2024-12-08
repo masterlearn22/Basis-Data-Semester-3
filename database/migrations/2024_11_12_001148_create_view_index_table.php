@@ -37,11 +37,19 @@ return new class extends Migration
 
         DB::statement('
         CREATE OR REPLACE VIEW view_detail_penjualan AS
-        SELECT detail_penjualan.iddetail_penjualan, penjualan.idpenjualan,
-        barang.nama, detail_penjualan.jumlah, barang.harga
-        FROM detail_penjualan 
-        JOIN penjualan ON detail_penjualan.idpenjualan = penjualan.idpenjualan
-        LEFT JOIN barang ON detail_penjualan.idbarang = barang.idbarang;
+        SELECT 
+            dp.iddetail_penjualan,
+            dp.idpenjualan,
+            b.nama,
+            dp.Jumlah AS jumlah,
+            dp.harga_satuan AS harga,
+            dp.subtotal
+        FROM 
+            detail_penjualan dp
+        JOIN 
+            barang b ON dp.idbarang = b.idbarang
+        JOIN 
+            penjualan p ON dp.idpenjualan = p.idpenjualan
         ');
 
         DB::statement('
@@ -51,13 +59,32 @@ return new class extends Migration
         JOIN retur ON detail_retur.idretur = retur.idretur
         JOIN detail_penerimaan ON detail_retur.iddetail_penerimaan = detail_penerimaan.iddetail_penerimaan;
         ');
-    
+
 
         DB::statement('
         CREATE OR REPLACE VIEW view_kartustok AS
-        SELECT kartu_stok.*, barang.nama 
-        FROM kartu_stok
-        JOIN barang ON barang.idbarang = kartu_stok.idbarang;
+        SELECT 
+            b.idbarang,
+            b.nama AS nama_barang,
+            COALESCE(SUM(k.masuk), 0) AS total_masuk,
+            COALESCE(SUM(k.keluar), 0) AS total_keluar,
+            COALESCE(SUM(k.masuk - k.keluar), 0) AS stok_saat_ini,
+            (SELECT jenis_transaksi 
+             FROM kartu_stok 
+             WHERE idbarang = b.idbarang 
+             ORDER BY created_at DESC 
+             LIMIT 1) AS jenis_transaksi_terakhir,
+            (SELECT created_at 
+             FROM kartu_stok 
+             WHERE idbarang = b.idbarang 
+             ORDER BY created_at DESC 
+             LIMIT 1) AS waktu_transaksi_terakhir
+        FROM 
+            barang b
+        LEFT JOIN 
+            kartu_stok k ON b.idbarang = k.idbarang
+        GROUP BY 
+            b.idbarang, b.nama
         ');
 
         DB::statement('

@@ -27,42 +27,21 @@ class DetailPengadaanController extends Controller
         $validatedData = $request->validate([
             'idpengadaan' => 'required|numeric',
             'idbarang' => 'required|numeric',
-            'jumlah' => 'required|numeric',
+            'jumlah' => 'required|numeric|min:1',
         ]);
-
-        // Mengambil harga satuan dari tabel barang berdasarkan idbarang
-        $barang = DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$request->input('idbarang')]);
-        $harga_satuan = $barang[0]->harga;
-
-        // Menghitung subtotal berdasarkan jumlah * harga satuan
-        $sub_total = $request->input('jumlah') * $harga_satuan;
-
-        
-        DB::statement('
-        INSERT INTO detail_pengadaan (idpengadaan, idbarang, harga_satuan, jumlah, sub_total) 
-        VALUES (?, ?, ?, ?, ?)', [
+    
+        // Panggil stored procedure untuk membuat detail pengadaan
+        $result = DB::select('CALL sp_create_detail_pengadaan(?, ?, ?)', [
             $request->input('idpengadaan'),
             $request->input('idbarang'),
-            $harga_satuan,  // Harga satuan dari tabel barang
-            $request->input('jumlah'),
-            $sub_total,  // Subtotal yang sudah dihitung
+            $request->input('jumlah')
         ]);
-        
-        $subtotal_nilai = DB::select('
-            SELECT SUM(sub_total) AS subtotal_nilai
-            FROM detail_pengadaan
-            WHERE idpengadaan = ?',
-            [$request->input('idpengadaan')]
-        );
-
-        DB::statement('
-        INSERT INTO pengadaan (subtotal_nilai) 
-        VALUES (?)', [
-        $subtotal_nilai[0]->subtotal_nilai ?? 0 // Akses nilai subtotal_nilai
-    ]);
     
-
-        return redirect()->route('detail_pengadaan.index')->with('success', 'Detail Pengadaan berhasil ditambahkan.');
+        // Ambil ID detail pengadaan yang baru saja dibuat
+        $idDetailPengadaan = $result[0]->iddetail_pengadaan;
+    
+        return redirect()->route('detail_pengadaan.index', ['idpengadaan' => $request->input('idpengadaan')])
+            ->with('success', 'Detail Pengadaan berhasil ditambahkan.');
     }
 
     public function edit($id)

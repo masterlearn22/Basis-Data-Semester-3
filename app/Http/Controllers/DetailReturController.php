@@ -23,23 +23,34 @@ class DetailReturController extends Controller
 
     public function store(Request $request)
     {
+        // Validasi input
         $validatedData = $request->validate([
             'idretur' => 'required|numeric',
             'idbarang' => 'required|numeric',
-            'iddetail_penerimaan'=>'required',
+            'iddetail_penerimaan' => 'required|numeric',
             'alasan' => 'required|string',
-            'jumlah' => 'required|numeric',
+            'jumlah' => 'required|numeric|min:1',
         ]);
-
-        DB::insert('INSERT INTO detail_retur (idretur, idbarang,iddetail_penerimaan, alasan, jumlah, created_at, updated_at) VALUES (?, ?,?, ?, ?, NOW(), NOW())', [
-            $request->input('idretur'),
-            $request->input('idbarang'),
-            $request->input('iddetail_penerimaan'),
-            $request->input('alasan'),
-            $request->input('jumlah'),
-        ]);
-
-        return redirect()->route('detail_retur.index')->with('success', 'Detail Retur berhasil ditambahkan.');
+    
+        try {
+            // Panggil stored procedure untuk membuat detail retur
+            $result = DB::select('CALL sp_create_detail_retur(?, ?, ?, ?, ?)', [
+                $request->input('idretur'),
+                $request->input('idbarang'),
+                $request->input('iddetail_penerimaan'),
+                $request->input('alasan'),
+                $request->input('jumlah')
+            ]);
+    
+            // Ambil ID detail retur yang baru saja dibuat
+            $idDetailRetur = $result[0]->iddetail_retur;
+    
+            return redirect()->route('detail_retur.index', ['idretur' => $request->input('idretur')])
+                ->with('success', 'Detail Retur berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return redirect()->route('detail_retur.create')
+                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+        }
     }
 
     public function edit($id)

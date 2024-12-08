@@ -36,22 +36,22 @@ return new class extends Migration
                 current_stock + NEW.jumlah_terima,
                 NEW.idpenerimaan,
                 NEW.idbarang
-            );
+                );
+            END;
+        ");
+
+        DB::unprepared("
+        CREATE TRIGGER after_penerimaan_delete
+        AFTER DELETE ON detail_penerimaan
+        FOR EACH ROW
+        BEGIN
+            UPDATE kartu_stok
+            SET stock = GREATEST(stock - OLD.jumlah_terima, 0),
+                masuk = GREATEST(masuk - OLD.jumlah_terima, 0)
+            WHERE idbarang = OLD.idbarang;
         END;
-    ");
 
-    DB::unprepared("
-CREATE TRIGGER after_penerimaan_delete
-AFTER DELETE ON detail_penerimaan
-FOR EACH ROW
-BEGIN
-    UPDATE kartu_stok
-    SET stock = GREATEST(stock - OLD.jumlah_terima, 0),
-        masuk = GREATEST(masuk - OLD.jumlah_terima, 0)
-    WHERE idbarang = OLD.idbarang;
-END;
-
-");
+        ");
     
 
         DB::unprepared("
@@ -59,40 +59,44 @@ END;
         AFTER INSERT ON detail_retur
         FOR EACH ROW
         BEGIN
+            DECLARE v_idbarang INT;
+            DECLARE v_current_stock INT;
+
+            # Ambil idbarang dari detail_penerimaan
+            SELECT idbarang INTO v_idbarang 
+            FROM detail_penerimaan 
+            WHERE iddetail_penerimaan = NEW.iddetail_penerimaan;
+
+            # Hitung stok terakhir sebelum retur
+            SELECT IFNULL(
+                (SELECT stock FROM kartu_stok 
+                WHERE idbarang = v_idbarang 
+                ORDER BY idkartu_stok DESC 
+                LIMIT 1), 0) 
+            INTO v_current_stock;
+
+            # Insert ke kartu_stok
             INSERT INTO kartu_stok (
-                jenis_transaksi, masuk, keluar, stock, created_at, id_transaksi, idbarang
+                jenis_transaksi, 
+                masuk, 
+                keluar, 
+                stock, 
+                created_at, 
+                id_transaksi, 
+                idbarang
             )
             VALUES (
                 'R',
-                NEW.jumlah,
                 0,
-                (SELECT IFNULL(SUM(masuk) - SUM(keluar), 0) FROM kartu_stok WHERE idbarang = (SELECT idbarang FROM detail_penerimaan WHERE iddetail_penerimaan = NEW.iddetail_penerimaan)) + NEW.jumlah,
+                NEW.jumlah,
+                v_current_stock - NEW.jumlah,
                 NOW(),
                 NEW.idretur,
-                (SELECT idbarang FROM detail_penerimaan WHERE iddetail_penerimaan = NEW.iddetail_penerimaan)
+                v_idbarang
             );
         END
-    ");
+        ");
 
-        DB::unprepared("
-        CREATE TRIGGER after_penjualan_insert
-        AFTER INSERT ON detail_penjualan
-        FOR EACH ROW
-        BEGIN
-            INSERT INTO kartu_stok (
-                jenis_transaksi, masuk, keluar, stock, created_at, id_transaksi, idbarang
-            )
-            VALUES (
-                'K',
-                0,
-                NEW.jumlah,
-                (SELECT IFNULL(SUM(masuk) - SUM(keluar), 0) FROM kartu_stok WHERE idbarang = NEW.idbarang) - NEW.jumlah,
-                NOW(),
-                NEW.idpenjualan,
-                NEW.idbarang
-            );
-        END
-    ");
     }
 
     /**

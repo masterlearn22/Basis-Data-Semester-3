@@ -5,7 +5,7 @@
     <div class="container">
         <h2>List of Retur</h2>
 
-        <a href="{{ route('retur.create') }}" class="btn btn-primary mb-3">Add Retur</a>
+        <a href="{{ route('retur.create') }}" class="mb-3 btn btn-primary">Add Retur</a>
 
 
         <table class="table table-bordered">
@@ -13,7 +13,6 @@
                 <tr>
                     <th>Penerimaan</th>
                     <th>User</th>
-                    <th>Jumlah</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -22,9 +21,7 @@
                     <tr>
                         <td>{{ $retur->idpenerimaan }}</td>
                         <td>{{ $retur->username }}</td>
-                        <td>{{ $retur->jumlah }}</td>
-                        <td>
-                            <a href="{{ route('retur.edit', $retur->idretur) }}" class="btn btn-warning">Edit</a>
+                          <td>  <a href="{{ route('retur.edit', $retur->idretur) }}" class="btn btn-warning">Edit</a>
 
                             <form action="{{ route('retur.destroy', $retur->idretur) }}" method="POST" style="display:inline-block;">
                                 @csrf

@@ -5,7 +5,7 @@
     <div class="container">
         <h2>List of Detail Penjualan</h2>
 
-        <a href="{{ route('detail_penjualan.create') }}" class="btn btn-primary mb-3">Add Detail Penjualan</a>
+        <a href="{{ route('detail_penjualan.create') }}" class="mb-3 btn btn-primary">Add Detail Penjualan</a>
 
 
         <table class="table table-bordered">
@@ -15,6 +15,7 @@
                     <th>Barang</th>
                     <th>Jumlah</th>
                     <th>Harga Satuan</th>
+                    <th>SubTotal</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -25,6 +26,7 @@
                         <td>{{ $detail_penjualan->nama }}</td>
                         <td>{{ $detail_penjualan->jumlah }}</td>
                         <td>{{ $detail_penjualan->harga }}</td>
+                        <td>{{ $detail_penjualan->subtotal}}</td>
                         <td>
                             <a href="{{ route('detail_penjualan.edit', $detail_penjualan->iddetail_penjualan) }}" class="btn btn-warning">Edit</a>
 

@@ -30,24 +30,30 @@ class PenerimaanController extends Controller
     // Menyimpan data penerimaan baru
     public function store(Request $request)
     {
-       // dd($request->all());
+        // Validasi input
         $validatedData = $request->validate([
             'idpengadaan' => 'required|numeric',
-            'status' => 'required',
-            'iduser'=> 'required'
+            'status' => 'required|string',
+            'iduser' => 'required|numeric'
         ]);
-
-        // Query SQL untuk insert ke tabel penerimaan
-        DB::statement('
-            INSERT INTO penerimaan (idpengadaan, status, created_at,iduser) 
-            VALUES (?, ?, NOW(),?)
-        ', [
-            $request->input('idpengadaan'),
-            $request->input('status'),
-            $request->input('iduser')
-        ]);
-
-        return redirect()->route('penerimaan.index')->with('success', 'Penerimaan berhasil ditambahkan.');
+    
+        try {
+            // Panggil stored procedure untuk membuat penerimaan
+            $result = DB::select('CALL sp_create_penerimaan(?, ?, ?)', [
+                $request->input('idpengadaan'),
+                $request->input('status'),
+                $request->input('iduser')
+            ]);
+    
+            // Ambil ID penerimaan yang baru saja dibuat
+            $idPenerimaan = $result[0]->idpenerimaan;
+    
+            return redirect()->route('penerimaan.index')
+                ->with('success', 'Penerimaan berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return redirect()->route('penerimaan.create')
+                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+        }
     }
 
     // Menampilkan form untuk mengedit penerimaan

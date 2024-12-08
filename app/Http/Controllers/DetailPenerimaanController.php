@@ -46,54 +46,25 @@ class DetailPenerimaanController extends Controller
         $validatedData = $request->validate([
             'idpenerimaan' => 'required|numeric',
             'idbarang' => 'required|numeric',
-            'jumlah_terima' => 'required|numeric',
+            'jumlah_terima' => 'required|numeric|min:1',
         ]);
     
         try {
-            // Ambil harga barang dari database
-            $barang = DB::select('SELECT harga FROM barang WHERE idbarang = ?', [$request->input('idbarang')]);
+            // Panggil stored procedure untuk membuat detail penerimaan
+            $result = DB::select('CALL sp_create_detail_penerimaan(?, ?, ?)', [
+                $request->input('idpenerimaan'),
+                $request->input('idbarang'),
+                $request->input('jumlah_terima')
+            ]);
     
-            if (empty($barang)) {
-                return redirect()->route('detail_penerimaan.create')->with('error', 'Barang tidak ditemukan.');
-            }
+            // Ambil ID detail penerimaan yang baru saja dibuat
+            $idDetailPenerimaan = $result[0]->iddetail_penerimaan;
     
-            // Hitung sub_total
-            $harga = $barang[0]->harga ?? null;
-            
-            $sub_total = $harga * $request->input('jumlah_terima');
-
-            
-            // Masukkan data ke detail_penerimaan
-            try {
-                // Debug data yang akan diinsert
-                $data = [
-                    $request->input('idpenerimaan'),
-                    $request->input('idbarang'),
-                    $harga,
-                    $request->input('jumlah_terima'),
-                    $sub_total,
-                ];
-                // dd($data); // Pastikan semua data sesuai
-            
-                // Masukkan data ke tabel detail_penerimaan
-                DB::insert(
-                    'INSERT INTO detail_penerimaan (idpenerimaan, idbarang, harga_satuan, jumlah_terima, sub_total)
-                     VALUES (?, ?, ?, ?, ?)',
-                    $data
-                );
-            
-                // dd('Insert success'); // Jika mencapai sini, query berhasil
-            } catch (\Exception $e) {
-                // Tangkap detail error
-                dd('Error:', $e->getMessage());
-            }
-            
-            
-    
-            return redirect()->route('detail_penerimaan.index')->with('success', 'Detail Penerimaan berhasil ditambahkan.');
+            return redirect()->route('detail_penerimaan.index', ['idpenerimaan' => $request->input('idpenerimaan')])
+                ->with('success', 'Detail Penerimaan berhasil ditambahkan.');
         } catch (\Exception $e) {
-    
-            return redirect()->route('detail_penerimaan.create')->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+            return redirect()->route('detail_penerimaan.create')
+                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
     

@@ -24,40 +24,26 @@ class PengadaanController extends Controller
 
     public function store(Request $request)
     {
-        
         $validatedData = $request->validate([
             'idvendor' => 'required|numeric',
             'ppn' => 'required|numeric',
             'iduser' => 'required|numeric',
-            'status' => 'required|in:0,1',  // Menyesuaikan status (0 atau 1)
+            'status' => 'required|in:0,1',
         ]);
-
-        // Menghitung subtotal_nilai dari detail_pengadaan berdasarkan idpengadaan yang dipilih
-        $subtotal_nilai = DB::select(
-            '
-            SELECT SUM(sub_total) AS subtotal_nilai
-            FROM detail_pengadaan
-            WHERE idpengadaan = ?',
-            [$request->input('idpengadaan')]
-        ); // Default ke 0 jika tidak ada hasil
-        $subtotal_nilai = $subtotal_nilai[0]->subtotal_nilai ?? 0;
-        // Menghitung total nilai dengan PPN
-        $total_nilai = $subtotal_nilai +(( $request->input('ppn')/100) *$subtotal_nilai);
-
-        DB::statement('
-            INSERT INTO pengadaan 
-            (idvendor, subtotal_nilai, total_nilai, ppn, iduser, status, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())', [
+    
+        // Panggil stored procedure untuk membuat pengadaan
+        $result = DB::select('CALL sp_create_pengadaan(?, ?, ?, ?)', [
             $request->input('idvendor'),
-            $subtotal_nilai,  // Menggunakan subtotal_nilai yang sudah dihitung
-            $total_nilai,
             $request->input('ppn'),
             $request->input('iduser'),
-            $request->input('status'),
+            $request->input('status')
         ]);
-
-
-        return redirect()->route('pengadaan.index')->with('success', 'Pengadaan berhasil ditambahkan.');
+    
+        // Ambil ID pengadaan yang baru saja dibuat
+        $idpengadaan = $result[0]->idpengadaan;
+    
+        return redirect()->route('detail_pengadaan.create', ['idpengadaan' => $idpengadaan])
+            ->with('success', 'Pengadaan berhasil dibuat. Silakan tambahkan detail pengadaan.');
     }
 
     public function edit($id)

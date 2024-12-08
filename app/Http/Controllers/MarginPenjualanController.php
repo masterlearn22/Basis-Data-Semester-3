@@ -20,15 +20,26 @@ class MarginPenjualanController extends Controller
 
     public function store(Request $request)
     {
+        // Validasi input
         $validatedData = $request->validate([
-            'persen' => 'required',
+            'persen' => 'required|numeric|min:0|max:100',
         ]);
-
-        DB::insert('INSERT INTO margin_penjualan (persen, created_at, updated_at) VALUES (  ?, NOW(), NOW())', [
-            $request->input('persen'),
-        ]);
-
-        return redirect()->route('margin_penjualan.index')->with('success', 'Margin Penjualan berhasil ditambahkan.');
+    
+        try {
+            // Panggil stored procedure untuk membuat margin penjualan
+            $result = DB::select('CALL sp_create_margin_penjualan(?)', [
+                $request->input('persen')
+            ]);
+    
+            // Ambil ID margin penjualan yang baru saja dibuat
+            $idMarginPenjualan = $result[0]->idmargin_penjualan;
+    
+            return redirect()->route('margin_penjualan.index')
+                ->with('success', 'Margin Penjualan berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return redirect()->route('margin_penjualan.create')
+                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+        }
     }
 
     public function edit($id)
