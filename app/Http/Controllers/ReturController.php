@@ -27,13 +27,17 @@ class ReturController extends Controller
             'iduser' => 'required|numeric',
             'jumlah' => 'required|numeric',
         ]);
-
-        DB::statement('CALL sp_create_retur(?, ?, ?)', [
-            $request->input('idpenerimaan'),
-            $request->input('iduser'),
-            $request->input('jumlah')
+    
+        // Panggil prosedur dengan parameter sesuai definisi
+        $result = DB::select('CALL sp_create_retur(?, ?, ?)', [
+            $validatedData['idpenerimaan'],
+            $validatedData['iduser'], 
+            $validatedData['jumlah']
         ]);
-
+    
+        // Ambil ID retur dari hasil prosedur
+        $idretur = $result[0]->idretur;
+    
         return redirect()->route('retur.index')->with('success', 'Retur berhasil ditambahkan.');
     }
 
@@ -55,38 +59,20 @@ class ReturController extends Controller
     {
         // Validasi input
         $validatedData = $request->validate([
-            'idpenerimaan' => 'required|exists:penerimaan,idpenerimaan',
-            'iduser' => 'required|exists:users,iduser',
-            'jumlah' => 'required|numeric|min:1'
+            'idpenerimaan' => 'nullable|exists:penerimaan,idpenerimaan',
+            'iduser' => 'nullable|exists:users,iduser',
         ]);
-
-        try {
             // Panggil fungsi update dengan parameter dari validasi
-            $result = DB::select('SELECT fn_update_retur(?, ?, ?, ?) AS result', [
+            $result
+             = DB::select('SELECT fn_update_retur(?, ?, ?) AS result', [
                 $idretur,
                 $validatedData['idpenerimaan'],
                 $validatedData['iduser'],
-                $validatedData['jumlah']
             ]);
+        
+        return redirect()->route('retur.index')->with('success', 'Retur berhasil ditambahkan.');
 
-            // Ambil hasil dari fungsi
-            $rowsAffected = $result[0]->result;
-
-            // Cek hasil update
-            if ($rowsAffected > 0) {
-                return redirect()->route('retur.index')
-                    ->with('success', 'Retur berhasil diupdate');
-            } else {
-                return redirect()->back()
-                    ->with('error', 'Gagal update retur')
-                    ->withInput();
-            }
-        } catch (\Exception $e) {
-            // Tangani error yang mungkin terjadi
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
+      
     }
 
     public function destroy($id)

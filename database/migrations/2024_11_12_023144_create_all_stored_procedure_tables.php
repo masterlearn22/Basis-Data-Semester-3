@@ -189,15 +189,27 @@ return new class extends Migration {
 
         // Stored Procedure untuk Retur
         DB::statement('
-            CREATE PROCEDURE sp_create_retur(
-                IN p_idpenerimaan INT,
-                IN p_iduser INT
-            )
-            BEGIN
-                INSERT INTO retur (idpenerimaan, iduser, created_at)
-                VALUES (p_idpenerimaan, p_iduser, NOW());
-                SELECT LAST_INSERT_ID() AS idretur;
-            END
+        CREATE PROCEDURE sp_create_retur(
+            IN p_idpenerimaan INT,
+            IN p_iduser INT
+        )
+        BEGIN
+            DECLARE v_idretur INT;
+            
+            -- Insert ke tabel retur
+            INSERT INTO retur (idpenerimaan, iduser, created_at)
+            VALUES (p_idpenerimaan, p_iduser, NOW());
+            
+            -- Ambil ID retur yang baru saja dibuat
+            SET v_idretur = LAST_INSERT_ID();
+            
+            -- Insert detail retur
+            INSERT INTO detail_retur (idretur)
+            VALUES (v_idretur);
+            
+            -- Kembalikan ID retur
+            SELECT v_idretur AS idretur;
+        END
         ');
 
         // Stored Procedure untuk Detail Retur
@@ -221,13 +233,14 @@ return new class extends Migration {
         // Stored Procedure untuk Margin Penjualan
         DB::statement('
             CREATE PROCEDURE sp_create_margin_penjualan(
-                IN p_persen DECIMAL(5,2)
+                IN p_persen DECIMAL(5,2),
+                IN p_status TINYINT
             )
             BEGIN
                 INSERT INTO margin_penjualan 
-                (persen, created_at, updated_at) 
+                (persen,status, created_at, updated_at) 
                 VALUES 
-                (p_persen, NOW(), NOW());
+                (p_persen, p_status, NOW(), NOW());
                 
                 SELECT LAST_INSERT_ID() AS idmargin_penjualan;
             END
@@ -255,6 +268,7 @@ return new class extends Migration {
                 0,  # ppn awal 0
                 0,  # total_nilai awal 0
                 p_idmargin_penjualan, 
+
                 p_iduser, 
                 NOW()
             );
@@ -269,17 +283,20 @@ return new class extends Migration {
         CREATE PROCEDURE sp_create_detail_penjualan(
             IN p_idpenjualan INT,
             IN p_idbarang INT,
-            IN p_harga_satuan INT,
-            IN p_jumlah INT,
-            IN p_sub_total INT
+            IN p_jumlah INT
         )
         BEGIN
+            DECLARE v_harga_satuan INT;
             DECLARE v_stok_tersedia INT DEFAULT 0;
             DECLARE v_calculated_subtotal INT;
             DECLARE v_iddetail_penjualan INT;
-    
+
+            SELECT harga INTO v_harga_satuan 
+                FROM barang 
+                WHERE idbarang = p_idbarang;
+
             # Hitung subtotal berdasarkan jumlah * harga_satuan
-            SET v_calculated_subtotal = p_jumlah * p_harga_satuan;
+            SET v_calculated_subtotal = p_jumlah * v_harga_satuan;
     
             # Cek stok barang - hitung stok tersedia dari kartu_stok
             SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_stok_tersedia
@@ -297,12 +314,12 @@ return new class extends Migration {
                 idpenjualan, 
                 idbarang, 
                 harga_satuan, 
-                jumlah, 
+                jumlah,
                 subtotal
             ) VALUES (
                 p_idpenjualan, 
                 p_idbarang, 
-                p_harga_satuan, 
+                v_harga_satuan, 
                 p_jumlah, 
                 v_calculated_subtotal
             );

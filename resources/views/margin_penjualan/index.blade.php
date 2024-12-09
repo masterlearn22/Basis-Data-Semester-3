@@ -13,6 +13,7 @@
                 <tr>
                     <th>ID margin</th>
                     <th>Persen</th>
+                    <th>status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -21,6 +22,7 @@
                     <tr>
                         <td>{{ $margin_penjualan->idmargin_penjualan}} </td>
                         <td>{{ $margin_penjualan->persen }} %</td>
+                        <td>{{ $margin_penjualan->status}} </td>
                         <td>
                             <a href="{{ route('margin_penjualan.edit', $margin_penjualan->idmargin_penjualan) }}" class="btn btn-warning">Edit</a>
 

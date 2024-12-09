@@ -30,12 +30,9 @@
                 <input type="number" class="form-control" id="jumlah" name="jumlah" required>
             </div>
 
-            <div class="form-group">
-                <label for="harga_satuan">Harga Satuan</label>
-                <input type="number" class="form-control" id="harga_satuan" name="harga_satuan" step="0.01" required>
-            </div>
-
             <button type="submit" class="btn btn-primary">Create Detail Penjualan</button>
         </form>
     </div>
+
+    
 @endsection

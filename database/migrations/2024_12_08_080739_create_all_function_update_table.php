@@ -218,206 +218,172 @@ return new class extends Migration
             SET 
                 idpengadaan = COALESCE(p_idpengadaan, idpengadaan),
                 idbarang = COALESCE(p_idbarang, idbarang),
-                harga_satuan = COALESCE(p_harga_satuan, harga_satuan),
                 jumlah = COALESCE(p_jumlah, jumlah),
-                sub_total = COALESCE(p_sub_total, harga_satuan * jumlah),
-                updated_at = NOW()
+                sub_total = COALESCE(p_sub_total, harga_satuan * jumlah)
             WHERE iddetail_pengadaan = p_iddetail_pengadaan;
             
             RETURN ROW_COUNT();
         END;
         ');
-
+        
         DB::statement('
-       CREATE FUNCTION fn_update_penerimaan(
+        CREATE FUNCTION fn_update_detail_penerimaan(
+            p_iddetail_penerimaan INT,
+            p_idbarang INT,
+            p_jumlah_terima INT
+        ) 
+        RETURNS INT
+        DETERMINISTIC
+        BEGIN
+            DECLARE v_harga_satuan INT;
+            DECLARE v_sub_total INT;
+            
+            -- Ambil harga satuan dari barang
+            SELECT harga INTO v_harga_satuan 
+            FROM barang 
+            WHERE idbarang = p_idbarang;
+            
+            -- Hitung sub total
+            SET v_sub_total = p_jumlah_terima * v_harga_satuan;
+            
+            -- Update detail penerimaan
+            UPDATE detail_penerimaan 
+            SET 
+                idbarang = p_idbarang,
+                jumlah_terima = p_jumlah_terima,
+                harga_satuan = v_harga_satuan,
+                sub_total = v_sub_total
+            WHERE iddetail_penerimaan = p_iddetail_penerimaan;
+            
+            RETURN ROW_COUNT();
+        END;
+        ');
+        
+        DB::statement('
+        CREATE FUNCTION fn_update_retur(
+            p_idretur INT,
             p_idpenerimaan INT,
-            p_idpengadaan INT,
-            p_tanggal DATE,
-            p_total_diterima INT,
-            p_status TINYINT,
             p_iduser INT
         ) 
         RETURNS INT
         DETERMINISTIC
         BEGIN
-            DECLARE v_rows_affected INT;
-            
-            UPDATE penerimaan 
+            UPDATE retur 
             SET 
-                idpengadaan = p_idpengadaan,
-                tanggal = p_tanggal,
-                total_diterima = p_total_diterima,
-                status = p_status,
-                iduser = p_iduser,
-                updated_at = NOW()
-            WHERE idpenerimaan = p_idpenerimaan;
+                idpenerimaan = p_idpenerimaan,
+                iduser = p_iduser
+            WHERE idretur = p_idretur;
             
-            SET v_rows_affected = ROW_COUNT();
-            
-            RETURN v_rows_affected;
+            RETURN ROW_COUNT();
         END;
-       ');
-
+        ');
+        
         DB::statement('
-       CREATE FUNCTION fn_update_detail_penerimaan(
+        CREATE FUNCTION fn_update_detail_retur(
+            p_iddetail_retur INT,
+            p_idretur INT,
             p_iddetail_penerimaan INT,
-            p_idpenerimaan INT,
-            p_iddetail_pengadaan INT,
+            p_alasan VARCHAR(200),
             p_jumlah INT
         ) 
         RETURNS INT
         DETERMINISTIC
         BEGIN
-            DECLARE v_rows_affected INT;
-            
-            UPDATE detail_penerimaan 
+            UPDATE detail_retur 
             SET 
-                idpenerimaan = p_idpenerimaan,
-                iddetail_pengadaan = p_iddetail_pengadaan,
-                jumlah = p_jumlah,
-                updated_at = NOW()
-            WHERE iddetail_penerimaan = p_iddetail_penerimaan;
+                idretur = p_idretur,
+                iddetail_penerimaan = p_iddetail_penerimaan,
+                alasan = p_alasan,
+                jumlah = p_jumlah
+            WHERE iddetail_retur = p_iddetail_retur;
             
-            SET v_rows_affected = ROW_COUNT();
-            
-            RETURN v_rows_affected;
+            RETURN ROW_COUNT();
         END;
-       ');
-
+        ');
+        
         DB::statement('
-       CREATE FUNCTION fn_update_retur(
-    p_idretur INT,
-    p_idpenerimaan INT,
-    p_tanggal DATE,
-    p_total_retur INT,
-    p_status TINYINT,
-    p_iduser INT
-) 
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE v_rows_affected INT;
-    
-    UPDATE retur 
-    SET 
-        idpenerimaan = p_idpenerimaan,
-        tanggal = p_tanggal,
-        total_retur = p_total_retur,
-        status = p_status,
-        iduser = p_iduser,
-        updated_at = NOW()
-    WHERE idretur = p_idretur;
-    
-    SET v_rows_affected = ROW_COUNT();
-    
-    RETURN v_rows_affected;
-END;
-       ');
-
+        CREATE FUNCTION fn_update_margin_penjualan(
+            p_idmargin_penjualan INT,
+            p_persen INT,
+            p_status TINYINT
+        ) 
+        RETURNS INT
+        DETERMINISTIC
+        BEGIN
+            UPDATE margin_penjualan 
+            SET 
+                persen = p_persen,
+                status = p_status,
+                updated_at = NOW()
+            WHERE idmargin_penjualan = p_idmargin_penjualan;
+            
+            RETURN ROW_COUNT();
+        END;
+        ');
+        
         DB::statement('
-       CREATE FUNCTION fn_update_detail_retur(
-    p_iddetail_retur INT,
-    p_idretur INT,
-    p_idbarang INT,
-    p_jumlah INT
-) 
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE v_rows_affected INT;
-    
-    UPDATE detail_retur 
-    SET 
-        idretur = p_idretur,
-        idbarang = p_idbarang,
-        jumlah = p_jumlah,
-        updated_at = NOW()
-    WHERE iddetail_retur = p_iddetail_retur;
-    
-    SET v_rows_affected = ROW_COUNT();
-    
-    RETURN v_rows_affected;
-END;
-       ');
-
+        CREATE FUNCTION fn_update_penjualan(
+            p_idpenjualan INT,
+            p_idmargin_penjualan INT,
+            p_iduser INT
+        ) 
+        RETURNS INT
+        DETERMINISTIC
+        BEGIN
+            UPDATE penjualan 
+            SET 
+                idmargin_penjualan = p_idmargin_penjualan,
+                iduser = p_iduser
+            WHERE idpenjualan = p_idpenjualan;
+            
+            RETURN ROW_COUNT();
+        END;
+        ');
+        
         DB::statement('
-       CREATE FUNCTION fn_update_margin_penjualan(
-    p_idmargin INT,
-    p_idpenjualan INT,
-    p_margin INT
-) 
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE v_rows_affected INT;
-    
-    UPDATE margin_penjualan 
-    SET 
-        idpenjualan = p_idpenjualan,
-        margin = p_margin,
-        updated_at = NOW()
-    WHERE idmargin = p_idmargin;
-    
-    SET v_rows_affected = ROW_COUNT();
-    
-    RETURN v_rows_affected;
-END;
-       ');
+        CREATE FUNCTION fn_update_detail_penjualan(
+            p_iddetail_penjualan INT,
+            p_idpenjualan INT,
+            p_idbarang INT,
+            p_jumlah INT
+        ) 
+        RETURNS INT
+        DETERMINISTIC
+        BEGIN
+            DECLARE v_harga_satuan INT;
+            DECLARE v_stok_tersedia INT DEFAULT 0;
+            DECLARE v_calculated_subtotal INT;
+            DECLARE v_iddetail_penjualan INT;
 
-        DB::statement('
-       CREATE FUNCTION fn_update_penjualan(
-    p_idpenjualan INT,
-    p_iduser INT,
-    p_tanggal DATE,
-    p_total_penjualan INT,
-    p_status TINYINT
-) 
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE v_rows_affected INT;
-    
-    UPDATE penjualan 
-    SET 
-        iduser = p_iduser,
-        tanggal = p_tanggal,
-        total_penjualan = p_total_penjualan,
-        status = p_status,
-        updated_at = NOW()
-    WHERE idpenjualan = p_idpenjualan;
-    
-    SET v_rows_affected = ROW_COUNT();
-    
-    RETURN v_rows_affected;
-END;
-       ');
+            SELECT harga INTO v_harga_satuan 
+                FROM barang 
+                WHERE idbarang = p_idbarang;
 
-        DB::statement('
-       CREATE FUNCTION fn_update_detail_penjualan(
-    p_iddetail_penjualan INT,
-    p_idpenjualan INT,
-    p_idbarang INT,
-    p_jumlah INT,
-    p_harga INT
-) 
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE v_rows_affected INT;
+            # Hitung subtotal berdasarkan jumlah * harga_satuan
+            SET v_calculated_subtotal = p_jumlah * v_harga_satuan;
     
-    UPDATE detail_penjualan 
-    SET 
-        idpenjualan = p_idpenjualan,
-        idbarang = p_idbarang,
-        jumlah = p_jumlah,
-        harga = p_harga,
-        updated_at = NOW()
-    WHERE iddetail_penjualan = p_iddetail_penjualan;
+            # Cek stok barang - hitung stok tersedia dari kartu_stok
+            SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_stok_tersedia
+            FROM kartu_stok 
+            WHERE idbarang = p_idbarang;
     
-    SET v_rows_affected = ROW_COUNT();
-    
-    RETURN v_rows_affected;
-END;
-       ');
+            # Validasi stok
+            IF p_jumlah > v_stok_tersedia THEN
+                SIGNAL SQLSTATE "45000" 
+                SET MESSAGE_TEXT = "Stok tidak mencukupi";
+            END IF;
+
+            UPDATE detail_penjualan 
+            SET 
+                idpenjualan = p_idpenjualan,
+                idbarang = p_idbarang,
+                harga_satuan = v_harga_satuan,
+                jumlah = p_jumlah,
+                subtotal= v_calculated_subtotal
+            WHERE iddetail_penjualan = p_iddetail_penjualan;
+            
+            RETURN ROW_COUNT();
+        END;
+        ');
     }
 };

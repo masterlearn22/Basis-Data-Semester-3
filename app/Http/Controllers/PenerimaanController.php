@@ -78,44 +78,22 @@ class PenerimaanController extends Controller
     // Menyimpan perubahan data penerimaan
     public function update(Request $request, $idpenerimaan)
     {
-        // Validasi input
-        $validatedData = $request->validate([
-            'idpengadaan' => 'required|exists:pengadaan,idpengadaan',
-            'tanggal' => 'required|date',
-            'total_diterima' => 'required|numeric',
-            'status' => 'required|in:0,1',
-            'iduser' => 'required|exists:users,iduser'
+        $validated = $request->validate([
+            'idpengadaan' => 'nullable|integer',
+            'total_diterima' => 'nullable|integer',
+            'iduser' => 'nullable|integer'
         ]);
 
-        try {
-            // Panggil fungsi update dengan parameter dari validasi
-            $result = DB::select('SELECT fn_update_penerimaan(?, ?, ?, ?, ?, ?) AS result', [
-                $idpenerimaan,
-                $validatedData['idpengadaan'],
-                $validatedData['tanggal'],
-                $validatedData['total_diterima'],
-                $validatedData['status'],
-                $validatedData['iduser']
-            ]);
+        $result = DB::select('SELECT fn_update_penerimaan(?, ?, ?, ?, ?, ?) AS result', [
+            $idpenerimaan,
+            $validated['idpengadaan'],
+            $validated['tanggal'],
+            $validated['total_diterima'],
+            $validated['status'],
+            $validated['iduser']
+        ])[0]->result;
 
-            // Ambil hasil dari fungsi
-            $rowsAffected = $result[0]->result;
-
-            // Cek hasil update
-            if ($rowsAffected > 0) {
-                return redirect()->route('penerimaan.index')
-                    ->with('success', 'Penerimaan berhasil diupdate');
-            } else {
-                return redirect()->back()
-                    ->with('error', 'Gagal update penerimaan')
-                    ->withInput();
-            }
-        } catch (\Exception $e) {
-            // Tangani error yang mungkin terjadi
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
+        return redirect()->route('penerimaan.index')->with('success', 'Penerimaan berhasil diupdate');
     }
 
     // Menghapus penerimaan dan detail penerimaan terkait

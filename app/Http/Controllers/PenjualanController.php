@@ -22,16 +22,15 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
+        //dd($request->all());
         $validatedData = $request->validate([
-            'subtotal_nilai' => 'required|numeric',
             'idmargin_penjualan' => 'required|numeric',
-            'iduser' => 'required|numeric',
+            'iduser' => 'required',
         ]);
 
         try {
             // Panggil stored procedure untuk menyimpan data penjualan
-            DB::statement('CALL sp_create_penjualan(?, ?, ?)', [
-                $request->input('subtotal_nilai'),
+            DB::statement('CALL sp_create_penjualan(?, ?)', [
                 $request->input('idmargin_penjualan'),
                 $request->input('iduser'),
             ]);
@@ -65,20 +64,16 @@ class PenjualanController extends Controller
     {
         // Validasi input
         $validatedData = $request->validate([
-            'iduser' => 'required|exists:users,iduser',
-            'tanggal' => 'required|date',
-            'total_penjualan' => 'required|numeric',
-            'status' => 'required|in:0,1'
+            'idmargin_penjualan'=>'nullable',
+            'iduser' => 'nullable|exists:users,iduser'
         ]);
 
         try {
             // Panggil fungsi update dengan parameter dari validasi
-            $result = DB::select('SELECT fn_update_penjualan(?, ?, ?, ?, ?) AS result', [
+            $result = DB::select('SELECT fn_update_penjualan(?, ?, ?) AS result', [
                 $idpenjualan,
-                $validatedData['iduser'],
-                $validatedData['tanggal'],
-                $validatedData['total_penjualan'],
-                $validatedData['status']
+                $validatedData['idmargin_penjualan'],
+                $validatedData['iduser']
             ]);
 
             // Ambil hasil dari fungsi

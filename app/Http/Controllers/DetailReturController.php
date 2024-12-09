@@ -26,7 +26,6 @@ class DetailReturController extends Controller
         // Validasi input
         $validatedData = $request->validate([
             'idretur' => 'required|numeric',
-            'idbarang' => 'required|numeric',
             'iddetail_penerimaan' => 'required|numeric',
             'alasan' => 'required|string',
             'jumlah' => 'required|numeric|min:1',
@@ -34,9 +33,8 @@ class DetailReturController extends Controller
 
         try {
             // Panggil stored procedure untuk membuat detail retur
-            $result = DB::select('CALL sp_create_detail_retur(?, ?, ?, ?, ?)', [
+            $result = DB::select('CALL sp_create_detail_retur(?, ?, ?, ?)', [
                 $request->input('idretur'),
-                $request->input('idbarang'),
                 $request->input('iddetail_penerimaan'),
                 $request->input('alasan'),
                 $request->input('jumlah')
@@ -70,40 +68,24 @@ class DetailReturController extends Controller
     {
         // Validasi input
         $validatedData = $request->validate([
-            'idretur' => 'required|exists:retur,idretur',
-            'idbarang' => 'required|exists:barang,idbarang',
-            'iddetail_penerimaan' => 'required|exists:detail_penerimaan,iddetail_penerimaan',
-            'alasan' => 'required|string',
-            'jumlah' => 'required|numeric|min:1'
+            'idretur' => 'nullable|exists:retur,idretur',
+            'iddetail_penerimaan' => 'nullable|exists:detail_penerimaan,iddetail_penerimaan',
+            'alasan' => 'nullable|string',
+            'jumlah' => 'nullable|numeric'
         ]);
-
-        try {
+        
+       // dd($request->all());
             // Panggil fungsi update dengan parameter dari validasi
             $result = DB::select('SELECT fn_update_detail_retur(?, ?, ?, ?, ?) AS result', [
                 $iddetail_retur,
                 $validatedData['idretur'],
-                $validatedData['idbarang'],
+                $validatedData['iddetail_penerimaan'],
+                $validatedData['alasan'],
                 $validatedData['jumlah']
             ]);
 
-            // Ambil hasil dari fungsi
-            $rowsAffected = $result[0]->result;
-
-            // Cek hasil update
-            if ($rowsAffected > 0) {
-                return redirect()->route('detail_retur.index')
-                    ->with('success', 'Detail Retur berhasil diupdate');
-            } else {
-                return redirect()->back()
-                    ->with('error', 'Gagal update detail retur')
-                    ->withInput();
-            }
-        } catch (\Exception $e) {
-            // Tangani error yang mungkin terjadi
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
+         return redirect()->route('detail_retur.index')->with('success', 'Detail Retur berhasil ditambahkan.');
+        
     }
 
     public function destroy($id)

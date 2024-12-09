@@ -13,31 +13,29 @@ class DetailPenjualanController extends Controller
         return view('detail_penjualan.index', compact('detail_penjualans'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         // Ambil data pendukung
-        $penjualans = DB::table('penjualan')->get();
-        $barangs = DB::table('barang')->get();
+        $penjualans = DB::select('SELECT * FROM penjualan');
+        $barangs = DB::select('SELECT * FROM barang');
 
         return view('detail_penjualan.create', compact('penjualans', 'barangs'));
     }
 
     public function store(Request $request)
     {
+        //dd($request->all());
         $request->validate([
             'idpenjualan' => 'required|exists:penjualan,idpenjualan',
             'idbarang' => 'required|exists:barang,idbarang',
-            'harga' => 'required|numeric|min:0',
             'jumlah' => 'required|numeric|min:1'
         ]);
 
         try {
-            DB::select('CALL sp_create_detail_penjualan(?, ?, ?, ?, ?)', [
+            DB::select('CALL sp_create_detail_penjualan(?, ?, ?)', [
                 $request->idpenjualan,
                 $request->idbarang,
-                $request->harga,
                 $request->jumlah,
-                0 // sub_total diisi 0 untuk dihitung otomatis
             ]);
 
             return redirect()->route('detail_penjualan.index')
@@ -68,38 +66,21 @@ class DetailPenjualanController extends Controller
             'idpenjualan' => 'required|exists:penjualan,idpenjualan',
             'idbarang' => 'required|exists:barang,idbarang',
             'jumlah' => 'required|numeric|min:1',
-            'harga' => 'required|numeric|min:0'
         ]);
 
-        try {
+
             // Panggil fungsi update dengan parameter dari validasi
-            $result = DB::select('SELECT fn_update_detail_penjualan(?, ?, ?, ?, ?) AS result', [
+            $result = DB::select('SELECT fn_update_detail_penjualan(?, ?, ?, ?) AS result', [
                 $iddetail_penjualan,
                 $validatedData['idpenjualan'],
                 $validatedData['idbarang'],
                 $validatedData['jumlah'],
-                $validatedData['harga']
             ]);
 
             // Ambil hasil dari fungsi
-            $rowsAffected = $result[0]->result;
-
-            // Cek hasil update
-            if ($rowsAffected > 0) {
-                return redirect()->route('detail_penjualan.index')
-                    ->with('success', 'Detail Penjualan berhasil diupdate');
-            } else {
-                return redirect()->back()
-                    ->with('error', 'Gagal update detail penjualan')
-                    ->withInput();
-            }
-        } catch (\Exception $e) {
-            // Tangani error yang mungkin terjadi
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
+           return redirect()->route('detail_penjualan.index');
     }
+
 
     public function destroy($iddetail_penjualan)
     {

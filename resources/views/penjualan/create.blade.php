@@ -7,11 +7,6 @@
 
         <form action="{{ route('penjualan.store') }}" method="POST">
             @csrf
-            <div class="form-group">
-                <label for="subtotal_nilai">Sub Total Nilai</label>
-                <input type="number" class="form-control" id="subtotal_nilai" name="subtotal_nilai" step="0.01" required>
-            </div>
-
 
             <div class="form-group">
                 <label for="idmargin_penjualan">Margin Penjualan</label>

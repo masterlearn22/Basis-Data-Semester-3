@@ -32,11 +32,6 @@
                 <input type="number" class="form-control" id="jumlah" name="jumlah" value="{{ $detail->jumlah }}" required>
             </div>
 
-            <div class="form-group">
-                <label for="harga">Harga Satuan</label>
-                <input type="number" class="form-control" id="harga" name="harga" value="{{ $detail->harga }}" step="0.01" required>
-            </div>
-
             <button type="submit" class="btn btn-primary">Update Detail Penjualan</button>
         </form>
     </div>

@@ -62,12 +62,11 @@ class DetailPengadaanController extends Controller
         return view('detail_pengadaan.edit', compact('detail_pengadaan', 'pengadaans', 'barangs'));
     }
 
-    public function updateDetail(Request $request, $iddetail_pengadaan)
+    public function update(Request $request, $iddetail_pengadaan)
     {
         $validatedData = $request->validate([
             'idpengadaan' => 'nullable|exists:pengadaan,idpengadaan',
             'idbarang' => 'nullable|exists:barang,idbarang',
-            'harga_satuan' => 'nullable|numeric',
             'jumlah' => 'nullable|numeric'
         ]);
     

@@ -23,23 +23,16 @@ class MarginPenjualanController extends Controller
         // Validasi input
         $validatedData = $request->validate([
             'persen' => 'required|numeric|min:0|max:100',
+            'status' =>'required'
         ]);
-
-        try {
             // Panggil stored procedure untuk membuat margin penjualan
-            $result = DB::select('CALL sp_create_margin_penjualan(?)', [
-                $request->input('persen')
+            $result = DB::select('CALL sp_create_margin_penjualan(?,?)', [
+                $request->input('persen'),
+                $request->input('status')
             ]);
-
-            // Ambil ID margin penjualan yang baru saja dibuat
-            $idMarginPenjualan = $result[0]->idmargin_penjualan;
 
             return redirect()->route('margin_penjualan.index')
                 ->with('success', 'Margin Penjualan berhasil ditambahkan.');
-        } catch (\Exception $e) {
-            return redirect()->route('margin_penjualan.create')
-                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
-        }
     }
 
     public function edit($id)
@@ -57,36 +50,19 @@ class MarginPenjualanController extends Controller
     {
         // Validasi input
         $validatedData = $request->validate([
-            'idpenjualan' => 'required|exists:penjualan,idpenjualan',
-            'margin' => 'required|numeric|min:0'
+            'persen' => 'nullable|numeric|min:0',
+            'status'=>'nullable'
         ]);
 
-        try {
+
             // Panggil fungsi update dengan parameter dari validasi
-            $result = DB::select('SELECT fn_update_margin_penjualan(?, ?, ?) AS result', [
+            $result = DB::select('SELECT fn_update_margin_penjualan(?,?,?) AS result', [
                 $idmargin_penjualan,
-                $validatedData['idpenjualan'],
-                $validatedData['margin']
+                $validatedData['persen'],
+                $validatedData['status']
             ]);
 
-            // Ambil hasil dari fungsi
-            $rowsAffected = $result[0]->result;
-
-            // Cek hasil update
-            if ($rowsAffected > 0) {
-                return redirect()->route('margin_penjualan.index')
-                    ->with('success', 'Margin Penjualan berhasil diupdate');
-            } else {
-                return redirect()->back()
-                    ->with('error', 'Gagal update margin penjualan')
-                    ->withInput();
-            }
-        } catch (\Exception $e) {
-            // Tangani error yang mungkin terjadi
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
+            return redirect()->route('margin_penjualan.index')->with('success', 'Margin Penjualan berhasil ditambahkan.'); 
     }
 
     public function destroy($id)

@@ -13,6 +13,11 @@
                 <input type="number" class="form-control" id="persen" name="persen" value="{{ $margin_penjualan->persen }}" step="0.01" required>
             </div>
 
+            <div class="form-group">
+                <label for="status">status</label>
+                <input type="number" class="form-control" id="status" name="status" value="{{ $margin_penjualan->status }}" step="0.01" required>
+            </div>
+
             <button type="submit" class="btn btn-primary">Update Margin Penjualan</button>
         </form>
     </div>
