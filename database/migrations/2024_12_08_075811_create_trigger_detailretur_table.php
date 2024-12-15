@@ -34,22 +34,10 @@ return new class extends Migration
 
             # Insert ke kartu_stok
             INSERT INTO kartu_stok (
-                jenis_transaksi, 
-                masuk, 
-                keluar, 
-                stock, 
-                created_at, 
-                id_transaksi, 
-                idbarang
+                jenis_transaksi, masuk,keluar, stock, created_at, id_transaksi, idbarang
             )
             VALUES (
-                'K',
-                0,
-                NEW.jumlah,
-                v_current_stock - NEW.jumlah,
-                NOW(),
-                NEW.idretur,
-                v_idbarang
+                'K', 0, NEW.jumlah, v_current_stock - NEW.jumlah, NOW(), NEW.idretur, v_idbarang
             );
         END
         ");
@@ -138,8 +126,8 @@ return new class extends Migration
             )
             VALUES (
                 'D', # Retur Delete
-                OLD.jumlah, # Kembalikan stok
-                0,
+                0, # Kembalikan stok
+                -OLD.jumlah,
                 v_current_stock + OLD.jumlah,
                 NOW(),
                 OLD.idretur,

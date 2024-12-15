@@ -37,19 +37,11 @@ return new class extends Migration
 
         DB::statement('
         CREATE OR REPLACE VIEW view_detail_penjualan AS
-        SELECT 
-            dp.iddetail_penjualan,
-            dp.idpenjualan,
-            b.nama,
-            dp.Jumlah AS jumlah,
-            dp.harga_satuan AS harga,
-            dp.subtotal
-        FROM 
-            detail_penjualan dp
-        JOIN 
-            barang b ON dp.idbarang = b.idbarang
-        JOIN 
-            penjualan p ON dp.idpenjualan = p.idpenjualan
+        SELECT dp.iddetail_penjualan, dp.idpenjualan, b.nama, dp.Jumlah AS jumlah, 
+        dp.harga_satuan AS harga,dp.subtotal
+        FROM detail_penjualan dp
+        JOIN barang b ON dp.idbarang = b.idbarang
+        JOIN penjualan p ON dp.idpenjualan = p.idpenjualan
         ');
 
         DB::statement('
@@ -79,12 +71,9 @@ return new class extends Migration
              WHERE idbarang = b.idbarang 
              ORDER BY created_at DESC 
              LIMIT 1) AS waktu_transaksi_terakhir
-        FROM 
-            barang b
-        LEFT JOIN 
-            kartu_stok k ON b.idbarang = k.idbarang
-        GROUP BY 
-            b.idbarang, b.nama
+        FROM barang b
+        LEFT JOIN kartu_stok k ON b.idbarang = k.idbarang
+        GROUP BY b.idbarang, b.nama
         ');
 
         DB::statement('

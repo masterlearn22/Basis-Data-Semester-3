@@ -35,21 +35,12 @@ return new class extends Migration
 
             # Insert pencatatan kartu stok
             INSERT INTO kartu_stok (
-                jenis_transaksi, 
-                masuk, 
-                keluar, 
-                stock, 
-                created_at, 
-                id_transaksi, 
-                idbarang
+                jenis_transaksi, masuk, keluar, stock, created_at,id_transaksi,idbarang
             ) VALUES (
-                "J",  # Jual 
-                0,    # Masuk 0 
+                "J",0,  
                 NEW.jumlah,  # Keluar sejumlah penjualan
                 v_sisa_stok,  # Sisa stok setelah pengurangan
-                NOW(), 
-                NEW.idpenjualan, 
-                NEW.idbarang
+                NOW(), NEW.idpenjualan, NEW.idbarang
             );
 
             # Hitung total subtotal untuk penjualan ini

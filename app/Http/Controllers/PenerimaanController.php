@@ -107,4 +107,31 @@ class PenerimaanController extends Controller
 
         return redirect()->route('penerimaan.index')->with('success', 'Penerimaan berhasil dihapus.');
     }
+
+    public function approvePenerimaan($idpenerimaan)
+{
+    //dd($idpenerimaan);
+
+        // Panggil stored procedure
+        DB::select('CALL sp_approve_penerimaan(?)', [$idpenerimaan]);
+
+        $detailPengadaan = DB::select("
+    SELECT idbarang, jumlah 
+    FROM detail_pengadaan 
+    WHERE idpengadaan = (
+        SELECT idpengadaan 
+        FROM penerimaan 
+        WHERE idpenerimaan = ?
+    )
+", [$idpenerimaan]);
+        //dd($idpenerimaan);
+        foreach ($detailPengadaan as $detail) {
+            DB::select('CALL sp_create_detail_penerimaan(?, ?, ?)', [
+                $idpenerimaan, 
+                $detail->idbarang, 
+                $detail->jumlah
+            ]);
+        }
+        return redirect()->back()->with('success', 'Penerimaan berhasil diapprove');
+}
 }

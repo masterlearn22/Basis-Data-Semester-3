@@ -6,7 +6,7 @@
     <div class="container">
         <h2>List of Users</h2>
 
-        <a href="{{ route('users.create') }}" class="btn btn-primary mb-3">Add User</a>
+        <a href="{{ route('users.create') }}" class="mb-3 btn btn-primary">Add User</a>
 
         <table class="table table-bordered">
             <thead>
@@ -35,4 +35,14 @@
             </tbody>
         </table>
     </div>
+    <p>
+        ada perubahan yang ingin saya lakukan dari mulai sp dan trigger, 
+        jadi di bagian pengadaan yaitu saat saya membuat pengadaan memasukkan barang, 
+        jumlah, dan ppn, nanti secara otomatis akan menghitung  yaitu
+         subtotal_nilai= jumlah * harga_satuan barang, dan total_nilai= subtotal_nilai + (ppn/subtotal_nilai), 
+         saat pengadaan di insert dia akan masuk detail_pengadaan dan penerimaan statusnya 0, 
+         di penerimaan akan ada action button yang jika di klik akan secara otomatis merubah status pengadaan tadi menjadi 1,
+          dan akan masuk detail_penerimaan, pengadaan yang sudah berubah statusnya menjadi 1, 
+          akan masuk secara otomatis ke kartu stok sebagai stok masuk
+    </p>
 @endsection

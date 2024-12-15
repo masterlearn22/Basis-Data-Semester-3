@@ -21,6 +21,10 @@ Route::get('/', function () {
     return view('layouts.app');
 });
 
+Route::get('/d', function () {
+    return view('layouts.dashboard');
+});
+
 
 Route::resource('users', UserController::class);
 // Vendor
@@ -55,4 +59,9 @@ Route::resource('retur', ReturController::class);
 Route::resource('detail_retur', DetailReturController::class);
 Route::resource('detail_penjualan', DetailPenjualanController::class);
 Route::resource('margin_penjualan', MarginPenjualanController::class);
+Route::controller(PenerimaanController::class)->group(function () {
+    Route::get('/penerimaan', 'index')->name('penerimaan.index');
+    Route::patch('/penerimaan/{idpenerimaan}/approve', 'approvePenerimaan')
+        ->name('penerimaan.approve');
+});
 

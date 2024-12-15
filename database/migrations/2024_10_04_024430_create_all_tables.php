@@ -78,7 +78,7 @@ class CreateAllTables extends Migration
             CREATE TABLE pengadaan (
                 idpengadaan BIGINT PRIMARY KEY AUTO_INCREMENT,
                 created_at TIMESTAMP,
-                updated_at TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 iduser INT,
                 status VARCHAR(1),
                 idvendor INT,
@@ -166,7 +166,7 @@ class CreateAllTables extends Migration
             updated_at TIMESTAMP,
             FOREIGN KEY (iduser) REFERENCES users(iduser) ON DELETE SET NULL
         );
-    ");
+        ");
 
         // Table: penjualan
         DB::statement("

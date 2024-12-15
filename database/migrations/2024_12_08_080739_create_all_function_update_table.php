@@ -48,9 +48,6 @@ return new class extends Migration
         END;
         ');
 
-
-
-
         DB::statement('
         CREATE FUNCTION fn_update_user(
             p_iduser INT,
@@ -225,35 +222,23 @@ return new class extends Migration
             RETURN ROW_COUNT();
         END;
         ');
-        
+
         DB::statement('
-        CREATE FUNCTION fn_update_detail_penerimaan(
-            p_iddetail_penerimaan INT,
-            p_idbarang INT,
-            p_jumlah_terima INT
+        CREATE FUNCTION fn_update_penerimaan(
+            p_idpenerimaan INT,
+            p_idpengadaan INT,
+            p_status TINYINT,
+            p_iduser INT
         ) 
         RETURNS INT
         DETERMINISTIC
         BEGIN
-            DECLARE v_harga_satuan INT;
-            DECLARE v_sub_total INT;
-            
-            -- Ambil harga satuan dari barang
-            SELECT harga INTO v_harga_satuan 
-            FROM barang 
-            WHERE idbarang = p_idbarang;
-            
-            -- Hitung sub total
-            SET v_sub_total = p_jumlah_terima * v_harga_satuan;
-            
-            -- Update detail penerimaan
-            UPDATE detail_penerimaan 
+            UPDATE penerimaan 
             SET 
-                idbarang = p_idbarang,
-                jumlah_terima = p_jumlah_terima,
-                harga_satuan = v_harga_satuan,
-                sub_total = v_sub_total
-            WHERE iddetail_penerimaan = p_iddetail_penerimaan;
+                idpengadaan = p_idpengadaan,
+                status = p_status,
+                iduser = p_iduser
+            WHERE idpenerimaan = p_idpenerimaan;
             
             RETURN ROW_COUNT();
         END;

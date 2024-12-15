@@ -18,34 +18,34 @@ class PengadaanController extends Controller
     public function create()
     {
         $vendors = DB::select('SELECT idvendor, nama_vendor FROM vendor');
+        $barangs = DB::select('SELECT idbarang, nama FROM barang');
         $users = DB::select('SELECT iduser, username FROM users');
-        return view('pengadaan.create', compact('vendors', 'users'));
+        return view('pengadaan.create', compact('vendors','barangs', 'users'));
     }
 
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'idvendor' => 'required|numeric',
-            'ppn' => 'required|numeric',
-            'iduser' => 'required|numeric',
-            'status' => 'required|in:0,1',
-        ]);
+public function store(Request $request)
+{
+    DB::beginTransaction();
+        // Buat pengadaan
+        $pengadaan = DB::select('CALL sp_create_pengadaan(?, ?, ?)', [
+            $request->idvendor,
+            $request->ppn,
+            $request->iduser
+        ])[0];
 
-        // Panggil stored procedure untuk membuat pengadaan
-        $result = DB::select('CALL sp_create_pengadaan(?, ?, ?, ?)', [
-            $request->input('idvendor'),
-            $request->input('ppn'),
-            $request->input('iduser'),
-            $request->input('status')
-        ]);
+        // Loop untuk setiap barang
+        foreach ($request->barang as $key => $idbarang) {
+            DB::select('CALL sp_create_detail_pengadaan(?, ?, ?)', [
+                $pengadaan->idpengadaan,
+                $idbarang,
+                $request->jumlah[$key]
+            ]);
+        }   
 
-        // Ambil ID pengadaan yang baru saja dibuat
-        $idpengadaan = $result[0]->idpengadaan;
-
-        return redirect()->route('detail_pengadaan.create', ['idpengadaan' => $idpengadaan])
-            ->with('success', 'Pengadaan berhasil dibuat. Silakan tambahkan detail pengadaan.');
-    }
-
+        DB::commit();
+        return redirect()->route('pengadaan.index')->with('success', 'Pengadaan berhasil dibuat');
+   
+}
     public function edit($id)
     {
         $pengadaan = DB::select('SELECT * FROM pengadaan WHERE idpengadaan = ?', [$id]);

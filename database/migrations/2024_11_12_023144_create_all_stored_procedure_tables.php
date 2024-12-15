@@ -17,7 +17,7 @@ return new class extends Migration {
             'sp_create_detail_penerimaan', 'sp_create_retur', 
             'sp_create_detail_retur', 'sp_create_penjualan', 
             'sp_create_margin_penjualan','sp_create_detail_penjualan',
-            'sp_update_penjualan_subtotal'
+            'sp_update_penjualan_subtotal','sp_approve_penerimaan'
         ];
 
 
@@ -98,93 +98,154 @@ return new class extends Migration {
 
         // Stored Procedure untuk Pengadaan
         DB::statement('
-            CREATE PROCEDURE sp_create_pengadaan(
-                IN p_idvendor INT,
-                IN p_ppn DECIMAL(5,2),
-                IN p_iduser INT,
-                IN p_status TINYINT
-            )
-            BEGIN
-                DECLARE v_idpengadaan INT;
+        CREATE PROCEDURE sp_create_pengadaan(
+            IN p_idvendor INT,
+            IN p_ppn DECIMAL(5,2),
+            IN p_iduser INT
+        )
+        BEGIN
+            DECLARE v_idpengadaan INT;
 
-                INSERT INTO pengadaan 
-                (idvendor, subtotal_nilai, total_nilai, ppn, iduser, status, created_at, updated_at) 
-                VALUES 
-                (p_idvendor, 0, 0, p_ppn, p_iduser, p_status, NOW(), NOW());
+            -- Insert pengadaan dengan status awal 0
+            INSERT INTO pengadaan 
+            (idvendor, subtotal_nilai, total_nilai, ppn, iduser, status, created_at,updateD_at) 
+            VALUES 
+            (p_idvendor, 0, 0, p_ppn, p_iduser, 0, NOW(),NOW());
 
-                SET v_idpengadaan = LAST_INSERT_ID();
-                SELECT v_idpengadaan AS idpengadaan;
-            END
+            SET v_idpengadaan = LAST_INSERT_ID();
+            
+            -- Kembalikan ID pengadaan yang baru dibuat
+            SELECT v_idpengadaan AS idpengadaan;
+        END;
         ');
 
         // Stored Procedure untuk Detail Pengadaan
         DB::statement('
-            CREATE PROCEDURE sp_create_detail_pengadaan(
-                IN p_idpengadaan INT,
-                IN p_idbarang INT,
-                IN p_jumlah INT
-            )
-            BEGIN
-                DECLARE v_harga_satuan DECIMAL(10,2);
-                DECLARE v_sub_total DECIMAL(10,2);
-                
-                SELECT harga INTO v_harga_satuan 
-                FROM barang 
-                WHERE idbarang = p_idbarang;
-                
-                SET v_sub_total = p_jumlah * v_harga_satuan;
-                
-                INSERT INTO detail_pengadaan 
-                (idpengadaan, idbarang, harga_satuan, jumlah, sub_total) 
-                VALUES 
-                (p_idpengadaan, p_idbarang, v_harga_satuan, p_jumlah, v_sub_total);
-                
-                SELECT LAST_INSERT_ID() AS iddetail_pengadaan;
-            END
+        CREATE PROCEDURE sp_create_detail_pengadaan(
+            IN p_idpengadaan INT,
+            IN p_idbarang INT,
+            IN p_jumlah INT
+        )
+        BEGIN
+            DECLARE v_harga_satuan DECIMAL(10,2);
+            DECLARE v_sub_total DECIMAL(10,2);
+            DECLARE v_total_subtotal DECIMAL(10,2);
+            DECLARE v_total_nilai DECIMAL(10,2);
+            DECLARE v_ppn DECIMAL(5,2);
+            
+            -- Ambil harga barang dari tabel barang
+            SELECT harga INTO v_harga_satuan 
+            FROM barang 
+            WHERE idbarang = p_idbarang;
+            
+            -- Hitung subtotal
+            SET v_sub_total = p_jumlah * v_harga_satuan;
+            
+            -- Insert ke detail pengadaan
+            INSERT INTO detail_pengadaan 
+            (idpengadaan, idbarang, harga_satuan, jumlah, sub_total) 
+            VALUES 
+            (p_idpengadaan, p_idbarang, v_harga_satuan, p_jumlah, v_sub_total);
+            
+            -- Hitung total subtotal untuk pengadaan ini
+            SELECT SUM(sub_total), MAX(p.ppn) INTO v_total_subtotal, v_ppn
+            FROM detail_pengadaan dp
+            JOIN pengadaan p ON dp.idpengadaan = p.idpengadaan
+            WHERE dp.idpengadaan = p_idpengadaan;
+            
+            -- Hitung total nilai termasuk PPN
+            SET v_total_nilai = v_total_subtotal + (v_total_subtotal * (v_ppn/100));
+            
+            -- Update pengadaan dengan subtotal dan total nilai
+            UPDATE pengadaan
+            SET subtotal_nilai = v_total_subtotal,
+                total_nilai = v_total_nilai
+            WHERE idpengadaan = p_idpengadaan;
+            
+            -- Kembalikan ID detail pengadaan
+            SELECT LAST_INSERT_ID() AS iddetail_pengadaan;
+        END;
         ');
 
         // Stored Procedure untuk Penerimaan
         DB::statement('
-            CREATE PROCEDURE sp_create_penerimaan(
-                IN p_idpengadaan INT,
-                IN p_status VARCHAR(1),
-                IN p_iduser INT
-            )
-            BEGIN
-                DECLARE v_idpenerimaan INT;
+CREATE PROCEDURE sp_approve_penerimaan(
+    IN p_idpenerimaan INT
+)
+BEGIN
+    DECLARE v_status CHAR(1);
+    DECLARE v_idpengadaan INT;
+    DECLARE v_ppn INT;
+    
+    -- Fetch idpengadaan based on penerimaan
+    SELECT pg.idpengadaan 
+    INTO v_idpengadaan
+    FROM pengadaan pg
+    JOIN penerimaan pn ON pg.idpengadaan = pn.idpengadaan
+    WHERE pn.idpenerimaan = p_idpenerimaan;  -- Adjusted condition
 
-                INSERT INTO penerimaan (idpengadaan, status, created_at, iduser)
-                VALUES (p_idpengadaan, p_status, NOW(), p_iduser);
+    -- Fetch status from penerimaan
+    SELECT status
+    INTO v_status
+    FROM penerimaan
+    WHERE idpenerimaan = p_idpenerimaan;
 
-                SET v_idpenerimaan = LAST_INSERT_ID();
-                SELECT v_idpenerimaan AS idpenerimaan;
-            END
+    -- Check if already approved
+    IF v_status = 1 THEN
+        SIGNAL SQLSTATE "45000"
+        SET MESSAGE_TEXT = "no ";
+    END IF;
+
+    -- Fetch ppn from pengadaan (assume single value for each pengadaan)
+SELECT ppn
+INTO v_ppn
+FROM pengadaan
+WHERE idpengadaan = v_idpengadaan
+GROUP BY idpengadaan;  -- Menambahkan GROUP BY agar query valid
+
+
+    -- Update penerimaan status to 1 (approved)
+    UPDATE penerimaan 
+    SET status = 1
+    WHERE idpenerimaan = p_idpenerimaan;
+
+    -- Update pengadaan status to 1 (approved)
+    UPDATE pengadaan
+    SET status = 1
+    WHERE idpengadaan = v_idpengadaan;
+
+END;
+
         ');
 
         // Stored Procedure untuk Detail Penerimaan
         DB::statement('
-            CREATE PROCEDURE sp_create_detail_penerimaan(
-                IN p_idpenerimaan INT,
-                IN p_idbarang INT,
-                IN p_jumlah_terima INT
-            )
-            BEGIN
-                DECLARE v_harga_satuan DECIMAL(10,2);
-                DECLARE v_sub_total DECIMAL(10,2);
-                
-                SELECT harga INTO v_harga_satuan 
-                FROM barang 
-                WHERE idbarang = p_idbarang;
-                
-                SET v_sub_total = p_jumlah_terima * v_harga_satuan;
-                
-                INSERT INTO detail_penerimaan 
-                (idpenerimaan, idbarang, harga_satuan, jumlah_terima, sub_total) 
-                VALUES 
-                (p_idpenerimaan, p_idbarang, v_harga_satuan, p_jumlah_terima, v_sub_total);
-                
-                SELECT LAST_INSERT_ID() AS iddetail_penerimaan;
-            END
+        CREATE PROCEDURE sp_create_detail_penerimaan(
+            IN p_idpenerimaan INT,
+            IN p_idbarang INT,
+            IN p_jumlah_terima INT
+        )
+        BEGIN
+            DECLARE v_harga_satuan DECIMAL(10,2);
+            DECLARE v_sub_total BIGINT;
+
+            -- Fetch harga_satuan from detail_pengadaan
+            SELECT harga_satuan INTO v_harga_satuan 
+            FROM detail_pengadaan 
+            WHERE idbarang = p_idbarang
+            LIMIT 1;
+            
+            -- Calculate sub_total
+            SET v_sub_total = p_jumlah_terima * v_harga_satuan;
+            
+            -- Insert into detail_penerimaan
+            INSERT INTO detail_penerimaan 
+            (idpenerimaan, idbarang, harga_satuan, jumlah_terima, sub_total) 
+            VALUES 
+            (p_idpenerimaan, p_idbarang, v_harga_satuan, p_jumlah_terima, v_sub_total);
+            
+            SELECT LAST_INSERT_ID() AS iddetail_penerimaan;
+        END;
         ');
 
         // Stored Procedure untuk Retur
@@ -257,22 +318,11 @@ return new class extends Migration {
         
             # Insert penjualan dengan nilai awal 0
             INSERT INTO penjualan (
-                subtotal_nilai, 
-                ppn, 
-                total_nilai, 
-                idmargin_penjualan, 
-                iduser, 
-                created_at
+                subtotal_nilai, ppn, total_nilai, idmargin_penjualan, 
+                iduser, created_at
             ) VALUES (
-                0,  # subtotal_nilai awal 0 
-                0,  # ppn awal 0
-                0,  # total_nilai awal 0
-                p_idmargin_penjualan, 
-
-                p_iduser, 
-                NOW()
+                0, 0, 0, p_idmargin_penjualan, p_iduser, NOW()
             );
-        
             # Ambil ID penjualan yang baru saja dibuat
             SET v_idpenjualan = LAST_INSERT_ID();
             SELECT v_idpenjualan AS idpenjualan;
@@ -311,17 +361,9 @@ return new class extends Migration {
     
             # Insert detail penjualan
             INSERT INTO detail_penjualan (
-                idpenjualan, 
-                idbarang, 
-                harga_satuan, 
-                jumlah,
-                subtotal
+                idpenjualan, idbarang, harga_satuan,jumlah,subtotal
             ) VALUES (
-                p_idpenjualan, 
-                p_idbarang, 
-                v_harga_satuan, 
-                p_jumlah, 
-                v_calculated_subtotal
+                p_idpenjualan, p_idbarang, v_harga_satuan, p_jumlah, v_calculated_subtotal
             );
             
         END;
