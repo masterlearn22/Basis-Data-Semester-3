@@ -86,12 +86,6 @@
           <span class="nav-link-text ms-1">Penjualan</span>
         </a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link text-dark" href="{{ route('detail_penjualan.index') }}">
-          <i class="material-symbols-rounded opacity-5">list_alt</i>
-          <span class="nav-link-text ms-1">Detail Penjualan</span>
-        </a>
-      </li>
     </ul>
   </div>
 </aside>

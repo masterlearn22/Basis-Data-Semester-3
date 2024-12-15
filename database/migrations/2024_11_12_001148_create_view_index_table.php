@@ -45,7 +45,7 @@ return new class extends Migration
         DB::statement('
         CREATE OR REPLACE VIEW view_detail_penjualan AS
         SELECT dp.iddetail_penjualan, dp.idpenjualan, b.nama, dp.Jumlah AS jumlah, 
-        dp.harga_satuan AS harga,dp.subtotal
+        dp.harga_satuan,dp.subtotal
         FROM detail_penjualan dp
         JOIN barang b ON dp.idbarang = b.idbarang
         JOIN penjualan p ON dp.idpenjualan = p.idpenjualan

@@ -9,9 +9,21 @@ class PengadaanController extends Controller
 {
     public function index()
     {
-        $pengadaans = DB::select(' SELECT * FROM view_pengadaan');
-        $detail_pengadaans = DB::select(' SELECT * FROM view_detail_pengadaan');
-        return view('pengadaan.index', compact('pengadaans','detail_pengadaans'));
+        $pengadaans = DB::select('SELECT * FROM view_pengadaan');
+        $detail_pengadaans = DB::select('SELECT * FROM view_detail_pengadaan');
+        
+        // Tambahkan data untuk dropdown di modal
+        $vendors = DB::select('SELECT idvendor, nama_vendor FROM vendor');
+        $barangs = DB::select('SELECT idbarang, nama FROM barang');
+        $users = DB::select('SELECT iduser, username FROM users');
+    
+        return view('pengadaan.index', compact(
+            'pengadaans', 
+            'detail_pengadaans', 
+            'vendors', 
+            'barangs', 
+            'users'
+        ));
     }
 
 

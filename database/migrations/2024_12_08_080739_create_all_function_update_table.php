@@ -223,68 +223,8 @@ return new class extends Migration
         END;
         ');
 
-        DB::statement('
-        CREATE FUNCTION fn_update_penerimaan(
-            p_idpenerimaan INT,
-            p_idpengadaan INT,
-            p_status TINYINT,
-            p_iduser INT
-        ) 
-        RETURNS INT
-        DETERMINISTIC
-        BEGIN
-            UPDATE penerimaan 
-            SET 
-                idpengadaan = p_idpengadaan,
-                status = p_status,
-                iduser = p_iduser
-            WHERE idpenerimaan = p_idpenerimaan;
-            
-            RETURN ROW_COUNT();
-        END;
-        ');
-        
-        DB::statement('
-        CREATE FUNCTION fn_update_retur(
-            p_idretur INT,
-            p_idpenerimaan INT,
-            p_iduser INT
-        ) 
-        RETURNS INT
-        DETERMINISTIC
-        BEGIN
-            UPDATE retur 
-            SET 
-                idpenerimaan = p_idpenerimaan,
-                iduser = p_iduser
-            WHERE idretur = p_idretur;
-            
-            RETURN ROW_COUNT();
-        END;
-        ');
-        
-        DB::statement('
-        CREATE FUNCTION fn_update_detail_retur(
-            p_iddetail_retur INT,
-            p_idretur INT,
-            p_iddetail_penerimaan INT,
-            p_alasan VARCHAR(200),
-            p_jumlah INT
-        ) 
-        RETURNS INT
-        DETERMINISTIC
-        BEGIN
-            UPDATE detail_retur 
-            SET 
-                idretur = p_idretur,
-                iddetail_penerimaan = p_iddetail_penerimaan,
-                alasan = p_alasan,
-                jumlah = p_jumlah
-            WHERE iddetail_retur = p_iddetail_retur;
-            
-            RETURN ROW_COUNT();
-        END;
-        ');
+
+    
         
         DB::statement('
         CREATE FUNCTION fn_update_margin_penjualan(
@@ -301,71 +241,6 @@ return new class extends Migration
                 status = p_status,
                 updated_at = NOW()
             WHERE idmargin_penjualan = p_idmargin_penjualan;
-            
-            RETURN ROW_COUNT();
-        END;
-        ');
-        
-        DB::statement('
-        CREATE FUNCTION fn_update_penjualan(
-            p_idpenjualan INT,
-            p_idmargin_penjualan INT,
-            p_iduser INT
-        ) 
-        RETURNS INT
-        DETERMINISTIC
-        BEGIN
-            UPDATE penjualan 
-            SET 
-                idmargin_penjualan = p_idmargin_penjualan,
-                iduser = p_iduser
-            WHERE idpenjualan = p_idpenjualan;
-            
-            RETURN ROW_COUNT();
-        END;
-        ');
-        
-        DB::statement('
-        CREATE FUNCTION fn_update_detail_penjualan(
-            p_iddetail_penjualan INT,
-            p_idpenjualan INT,
-            p_idbarang INT,
-            p_jumlah INT
-        ) 
-        RETURNS INT
-        DETERMINISTIC
-        BEGIN
-            DECLARE v_harga_satuan INT;
-            DECLARE v_stok_tersedia INT DEFAULT 0;
-            DECLARE v_calculated_subtotal INT;
-            DECLARE v_iddetail_penjualan INT;
-
-            SELECT harga INTO v_harga_satuan 
-                FROM barang 
-                WHERE idbarang = p_idbarang;
-
-            # Hitung subtotal berdasarkan jumlah * harga_satuan
-            SET v_calculated_subtotal = p_jumlah * v_harga_satuan;
-    
-            # Cek stok barang - hitung stok tersedia dari kartu_stok
-            SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_stok_tersedia
-            FROM kartu_stok 
-            WHERE idbarang = p_idbarang;
-    
-            # Validasi stok
-            IF p_jumlah > v_stok_tersedia THEN
-                SIGNAL SQLSTATE "45000" 
-                SET MESSAGE_TEXT = "Stok tidak mencukupi";
-            END IF;
-
-            UPDATE detail_penjualan 
-            SET 
-                idpenjualan = p_idpenjualan,
-                idbarang = p_idbarang,
-                harga_satuan = v_harga_satuan,
-                jumlah = p_jumlah,
-                subtotal= v_calculated_subtotal
-            WHERE iddetail_penjualan = p_iddetail_penjualan;
             
             RETURN ROW_COUNT();
         END;

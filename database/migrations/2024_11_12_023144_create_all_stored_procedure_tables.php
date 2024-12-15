@@ -127,10 +127,10 @@ return new class extends Migration {
             IN p_jumlah INT
         )
         BEGIN
-            DECLARE v_harga_satuan DECIMAL(10,2);
-            DECLARE v_sub_total DECIMAL(10,2);
-            DECLARE v_total_subtotal DECIMAL(10,2);
-            DECLARE v_total_nilai DECIMAL(10,2);
+            DECLARE v_harga_satuan DECIMAL(20,2);
+            DECLARE v_sub_total DECIMAL(20,3);
+            DECLARE v_total_subtotal DECIMAL(20,2);
+            DECLARE v_total_nilai DECIMAL(20,2);
             DECLARE v_ppn DECIMAL(5,2);
             
             -- Ambil harga barang dari tabel barang
@@ -359,11 +359,10 @@ END;
         DB::statement('
         CREATE PROCEDURE sp_create_penjualan(
             IN p_idmargin_penjualan INT,
-            IN p_iduser INT
+            IN p_iduser INT,
+            OUT p_idpenjualan INT
         )
         BEGIN
-            DECLARE v_idpenjualan INT;
-        
             # Insert penjualan dengan nilai awal 0
             INSERT INTO penjualan (
                 subtotal_nilai, ppn, total_nilai, idmargin_penjualan, 
@@ -371,50 +370,79 @@ END;
             ) VALUES (
                 0, 0, 0, p_idmargin_penjualan, p_iduser, NOW()
             );
+            
             # Ambil ID penjualan yang baru saja dibuat
-            SET v_idpenjualan = LAST_INSERT_ID();
-            SELECT v_idpenjualan AS idpenjualan;
-        END
+            SET p_idpenjualan = LAST_INSERT_ID();
+        END;
         ');
 
         DB::statement('
-        CREATE PROCEDURE sp_create_detail_penjualan(
-            IN p_idpenjualan INT,
-            IN p_idbarang INT,
-            IN p_jumlah INT
-        )
-        BEGIN
-            DECLARE v_harga_satuan INT;
-            DECLARE v_stok_tersedia INT DEFAULT 0;
-            DECLARE v_calculated_subtotal INT;
-            DECLARE v_iddetail_penjualan INT;
+CREATE PROCEDURE sp_create_detail_penjualan(
+    IN p_idpenjualan INT,
+    IN p_idbarang INT,
+    IN p_jumlah INT
+)
+BEGIN
+    DECLARE v_harga_satuan DECIMAL(10,2);
+    DECLARE v_stok_tersedia INT DEFAULT 0;
+    DECLARE v_margin_persen DECIMAL(5,2);
+    DECLARE v_calculated_subtotal DECIMAL(10,2);
 
-            SELECT harga INTO v_harga_satuan 
-                FROM barang 
-                WHERE idbarang = p_idbarang;
+    # Ambil harga satuan barang
+    SELECT harga INTO v_harga_satuan 
+    FROM barang 
+    WHERE idbarang = p_idbarang;
 
-            # Hitung subtotal berdasarkan jumlah * harga_satuan
-            SET v_calculated_subtotal = p_jumlah * v_harga_satuan;
-    
-            # Cek stok barang - hitung stok tersedia dari kartu_stok
-            SELECT COALESCE(SUM(masuk - keluar), 0) INTO v_stok_tersedia
-            FROM kartu_stok 
-            WHERE idbarang = p_idbarang;
-    
-            # Validasi stok
-            IF p_jumlah > v_stok_tersedia THEN
-                SIGNAL SQLSTATE "45000" 
-                SET MESSAGE_TEXT = "Stok tidak mencukupi";
-            END IF;
-    
-            # Insert detail penjualan
-            INSERT INTO detail_penjualan (
-                idpenjualan, idbarang, harga_satuan,jumlah,subtotal
-            ) VALUES (
-                p_idpenjualan, p_idbarang, v_harga_satuan, p_jumlah, v_calculated_subtotal
-            );
-            
-        END;
+    # Ambil margin/ppn penjualan
+    SELECT persen INTO v_margin_persen
+    FROM margin_penjualan mp
+    JOIN penjualan p ON p.idmargin_penjualan = mp.idmargin_penjualan
+    WHERE p.idpenjualan = p_idpenjualan;
+
+    # Hitung subtotal dasar
+    SET v_calculated_subtotal = p_jumlah * v_harga_satuan;
+
+    # Hitung total dengan margin/ppn
+
+
+    # Cek stok barang - hitung stok tersedia dari kartu_stok
+    SELECT COALESCE(SUM(masuk) - SUM(keluar), 0) INTO v_stok_tersedia
+    FROM kartu_stok 
+    WHERE idbarang = p_idbarang;
+
+    # Validasi stok
+    IF p_jumlah > v_stok_tersedia THEN
+        SIGNAL SQLSTATE "45000" 
+        SET MESSAGE_TEXT = "Stok tidak mencukupi";
+    END IF;
+
+    # Insert detail penjualan
+    INSERT INTO detail_penjualan (
+        idpenjualan, 
+        idbarang, 
+        harga_satuan, 
+        jumlah, 
+        subtotal
+    ) VALUES (
+        p_idpenjualan, 
+        p_idbarang, 
+        v_harga_satuan, 
+        p_jumlah, 
+        v_calculated_subtotal
+    );
+
+            # Update subtotal, ppn, dan total_nilai di tabel penjualan
+                UPDATE penjualan p
+                SET 
+                    p.subtotal_nilai = (
+                        SELECT SUM(subtotal) 
+                        FROM detail_penjualan 
+                        WHERE idpenjualan = p_idpenjualan
+                    ),
+                    p.ppn = p.subtotal_nilai * (v_margin_persen / 100),
+                    p.total_nilai = p.subtotal_nilai * (1 + (v_margin_persen / 100))
+                WHERE p.idpenjualan = p_idpenjualan;
+            END;
         ');
 
     // Fungsi update subtotal penjualan

@@ -10,91 +10,75 @@ class PenjualanController extends Controller
     public function index()
     {
         $penjualans = DB::select('SELECT * FROM view_penjualan');
-        return view('penjualan.index', compact('penjualans'));
+        $detail_penjualans = DB::select('SELECT * FROM view_detail_penjualan');
+        $margin_penjualans = DB::select('SELECT * FROM margin_penjualan');
+        $users = DB::SELECT('SELECT * FROM users');
+        $barangs_query = "
+        SELECT 
+            b.idbarang, 
+            b.nama, 
+            COALESCE((
+                SELECT SUM(masuk) - SUM(keluar)
+                FROM kartu_stok 
+                WHERE idbarang = b.idbarang
+            ), 0) as stock
+        FROM barang b
+    ";
+    $barangs = DB::select($barangs_query);
+        return view('penjualan.index', compact('penjualans','detail_penjualans','margin_penjualans', 'users','barangs'));
     }
 
     public function create()
     {
         $margin_penjualans = DB::select('SELECT * FROM margin_penjualan');
         $users = DB::SELECT('SELECT * FROM users');
-        return view('penjualan.create', compact('margin_penjualans', 'users'));
+        $barangs_query = "
+        SELECT 
+            b.idbarang, 
+            b.nama, 
+            COALESCE((
+                SELECT SUM(masuk) - SUM(keluar)
+                FROM kartu_stok 
+                WHERE idbarang = b.idbarang
+            ), 0) as stock
+        FROM barang b
+    ";
+    $barangs = DB::select($barangs_query);
+        return view('penjualan.create', compact('margin_penjualans', 'users','barangs'));
     }
 
     public function store(Request $request)
     {
-        //dd($request->all());
         $validatedData = $request->validate([
-            'idmargin_penjualan' => 'required|numeric',
-            'iduser' => 'required',
+            'idmargin_penjualan' => 'required|exists:margin_penjualan,idmargin_penjualan',
+            'iduser' => 'required|exists:users,iduser',
+            'idbarang' => 'required|exists:barang,idbarang',
+            'jumlah' => 'required|integer|min:1'
         ]);
+    
 
-        try {
-            // Panggil stored procedure untuk menyimpan data penjualan
-            DB::statement('CALL sp_create_penjualan(?, ?)', [
+            // Panggil stored procedure untuk menyimpan penjualan
+            $idpenjualan = DB::select('CALL sp_create_penjualan(?, ?, @p_idpenjualan)', [
                 $request->input('idmargin_penjualan'),
-                $request->input('iduser'),
+                $request->input('iduser')
             ]);
-
-            return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil ditambahkan.');
-        } catch (\Exception $e) {
-            return redirect()->route('penjualan.create')->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
-        }
-    }
-
-
-
-    public function edit($id)
-    {
-        // Ambil data penjualan dengan mengambil elemen pertama
-        $penjualan = DB::select('SELECT * FROM penjualan WHERE idpenjualan = ?', [$id])[0];
-
-        // Ambil data margin penjualan dan users
-        $margin_penjualans = DB::select('SELECT * FROM margin_penjualan');
-        $users = DB::select('SELECT * FROM users');
-
-        if (!$penjualan) {
-            return redirect()->route('penjualan.index')->with('error', 'Penjualan tidak ditemukan.');
-        }
-
-        // Kirim semua variabel yang diperlukan ke view
-        return view('penjualan.edit', compact('penjualan', 'margin_penjualans', 'users'));
-    }
-
-    public function update(Request $request, $idpenjualan)
-    {
-        // Validasi input
-        $validatedData = $request->validate([
-            'idmargin_penjualan'=>'nullable',
-            'iduser' => 'nullable|exists:users,iduser'
-        ]);
-
-        try {
-            // Panggil fungsi update dengan parameter dari validasi
-            $result = DB::select('SELECT fn_update_penjualan(?, ?, ?) AS result', [
+    
+            // Ambil ID penjualan yang baru saja dibuat
+            $result = DB::select('SELECT @p_idpenjualan AS idpenjualan')[0];
+            $idpenjualan = $result->idpenjualan;
+    
+            // Panggil stored procedure untuk menyimpan detail penjualan
+            DB::select('CALL sp_create_detail_penjualan(?, ?, ?)', [
                 $idpenjualan,
-                $validatedData['idmargin_penjualan'],
-                $validatedData['iduser']
+                $request->input('idbarang'),
+                $request->input('jumlah')
             ]);
-
-            // Ambil hasil dari fungsi
-            $rowsAffected = $result[0]->result;
-
-            // Cek hasil update
-            if ($rowsAffected > 0) {
-                return redirect()->route('penjualan.index')
-                    ->with('success', 'Penjualan berhasil diupdate');
-            } else {
-                return redirect()->back()
-                    ->with('error', 'Gagal update penjualan')
-                    ->withInput();
-            }
-        } catch (\Exception $e) {
-            // Tangani error yang mungkin terjadi
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
+    
+            return redirect()->route('penjualan.index')
+                ->with('success', 'Penjualan berhasil ditambahkan.');
+    
     }
+
 
     public function destroy($id)
     {

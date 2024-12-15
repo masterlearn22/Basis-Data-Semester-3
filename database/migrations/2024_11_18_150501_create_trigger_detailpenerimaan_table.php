@@ -58,30 +58,6 @@ return new class extends Migration
     ');
     
 
-        DB::unprepared("
-        CREATE TRIGGER after_penerimaan_delete
-        AFTER DELETE ON detail_penerimaan
-        FOR EACH ROW
-        BEGIN
-            DECLARE current_stock INT;
-
-            -- Hitung stok saat ini
-            SELECT IFNULL(SUM(masuk) - SUM(keluar), 0)
-            INTO current_stock
-            FROM kartu_stok
-            WHERE idbarang = OLD.idbarang;
-
-            -- Insert record pengurangan stok
-            INSERT INTO kartu_stok (
-                jenis_transaksi,masuk,keluar,stock, created_at, id_transaksi, idbarang
-            )
-            VALUES (
-                'D',-OLD.jumlah_terima,0, current_stock - OLD.jumlah_terima, NOW(), OLD.idpenerimaan, OLD.idbarang
-            );
-        END ;
-        ");
-    
-
     }
 
     /**

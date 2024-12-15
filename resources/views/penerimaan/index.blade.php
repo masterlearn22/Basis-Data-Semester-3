@@ -4,8 +4,6 @@
     <div class="container">
         <h2>List of Penerimaan</h2>
 
-        <a href="{{ route('penerimaan.create') }}" class="mb-3 btn btn-primary">Add Penerimaan</a>
-
         <table class="table">
             <thead>
                 <tr>
@@ -60,9 +58,9 @@
                             <tr>
                                 <td>{{ $detailPenerimaan->idpenerimaan }}</td>
                                 <td>{{ $detailPenerimaan->nama_barang }}</td>
-                                <td>{{ number_format($detailPenerimaan->harga_satuan, 2) }}</td>
+                                <td>Rp {{ number_format($detailPenerimaan->harga_satuan) }}</td>
                                 <td>{{ $detailPenerimaan->jumlah_terima }}</td>
-                                <td>{{ number_format($detailPenerimaan->sub_total, 2) }}</td>
+                                <td>Rp {{ number_format($detailPenerimaan->sub_total) }}</td>
                                 
                             </tr>
                         @endforeach

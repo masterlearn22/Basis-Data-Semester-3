@@ -11,16 +11,11 @@ class ReturController extends Controller
     {
         $returs = DB::select('SELECT * FROM view_retur');
         $detail_returs = DB::select('SELECT * FROM view_detailretur');
-        return view('retur.index', compact('returs','detail_returs'));
-    }
-
-    public function create()
-    {
         $barangs = DB::SELECT('SELECT barang.* FROM barang');
         $detail_penerimaans = DB::SELECT('SELECT detail_penerimaan.* FROM detail_penerimaan');
         $penerimaans = DB::select('SELECT penerimaan.* FROM penerimaan');
         $users = DB::select('SELECT users.* FROM users');
-        return view('retur.create', compact('penerimaans', 'users','barangs','detail_penerimaans'));
+        return view('retur.index', compact('returs','detail_returs','penerimaans', 'users','barangs','detail_penerimaans'));
     }
 
     public function store(Request $request)

@@ -24,7 +24,7 @@
                     <td>{{ $barang->jenis }}</td>
                     <td>{{ $barang->nama }}</td>
                     <td>{{ $barang->nama_satuan }}</td> <!-- Pastikan ini menggunakan nama_satuan -->
-                    <td>{{  number_format($barang->harga) }}</td>
+                    <td>Rp {{number_format($barang->harga) }}</td>
                     <td>{{ $barang->status }}</td>
                     <td>
                         <a href="{{ route('barang.edit', $barang->idbarang) }}" class="btn btn-warning">Edit</a>
