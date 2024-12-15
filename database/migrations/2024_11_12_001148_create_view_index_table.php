@@ -20,12 +20,19 @@ return new class extends Migration
 
         DB::statement('
         CREATE OR REPLACE VIEW view_detail_penerimaan AS
-        SELECT detail_penerimaan.*, penerimaan.status, barang.nama AS nama_barang
+        SELECT 
+            detail_penerimaan.iddetail_penerimaan,
+            detail_penerimaan.idpenerimaan,
+            detail_penerimaan.idbarang,
+            detail_penerimaan.harga_satuan,
+            detail_penerimaan.jumlah_terima,
+            detail_penerimaan.sub_total,
+            penerimaan.status AS status_penerimaan,
+            barang.nama AS nama_barang
         FROM detail_penerimaan
         JOIN penerimaan ON penerimaan.idpenerimaan = detail_penerimaan.idpenerimaan
-        LEFT JOIN barang ON barang.idbarang = detail_penerimaan.idbarang;
+        LEFT JOIN barang ON barang.idbarang = detail_penerimaan.idbarang
         ');
-
         DB::statement('
         CREATE OR REPLACE VIEW view_detail_pengadaan AS
         SELECT detail_pengadaan.*, barang.nama, barang.harga

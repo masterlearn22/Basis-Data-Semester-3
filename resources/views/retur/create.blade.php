@@ -1,4 +1,3 @@
-<!-- resources/views/retur/create.blade.php -->
 @extends('layouts.app')
 
 @section('content')
@@ -9,7 +8,7 @@
             @csrf
             <div class="form-group">
                 <label for="idpenerimaan">Penerimaan</label>
-                <select class="form-control" id="idpenerimaan" name="idpenerimaan">
+                <select class="form-control" id="idpenerimaan" name="idpenerimaan" required>
                     @foreach($penerimaans as $penerimaan)
                         <option value="{{ $penerimaan->idpenerimaan }}">{{ $penerimaan->idpenerimaan }}</option>
                     @endforeach
@@ -17,8 +16,8 @@
             </div>
 
             <div class="form-group">
-                <label for="iduser">User</label>
-                <select class="form-control" id="iduser" name="iduser">
+                <label for="iduser">User </label>
+                <select class="form-control" id="iduser" name="iduser" required>
                     @foreach($users as $user)
                         <option value="{{ $user->iduser }}">{{ $user->username }}</option>
                     @endforeach
@@ -27,7 +26,12 @@
 
             <div class="form-group">
                 <label for="jumlah">Jumlah</label>
-                <input type="number" class="form-control" id="jumlah" name="jumlah" required>
+                <input type="number" class="form-control" id="jumlah" name="jumlah" required min="1">
+            </div>
+
+            <div class="form-group">
+                <label for="alasan">Alasan</label>
+                <input type="text" class="form-control" id="alasan" name="alasan" required>
             </div>
 
             <button type="submit" class="btn btn-primary">Create Retur</button>

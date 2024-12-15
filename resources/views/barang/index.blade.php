@@ -5,7 +5,7 @@
     <div class="container">
         <h2>List of Barang</h2>
 
-        <a href="{{ route('barang.create') }}" class="btn btn-success mb-3">Tambah Barang</a>
+        <a href="{{ route('barang.create') }}" class="mb-3 btn btn-success">Tambah Barang</a>
 
         <table class="table table-bordered">
             <thead>
@@ -24,7 +24,7 @@
                     <td>{{ $barang->jenis }}</td>
                     <td>{{ $barang->nama }}</td>
                     <td>{{ $barang->nama_satuan }}</td> <!-- Pastikan ini menggunakan nama_satuan -->
-                    <td>{{ $barang->harga }}</td>
+                    <td>{{  number_format($barang->harga) }}</td>
                     <td>{{ $barang->status }}</td>
                     <td>
                         <a href="{{ route('barang.edit', $barang->idbarang) }}" class="btn btn-warning">Edit</a>

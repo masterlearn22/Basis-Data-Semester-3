@@ -10,33 +10,44 @@ class ReturController extends Controller
     public function index()
     {
         $returs = DB::select('SELECT * FROM view_retur');
-        return view('retur.index', compact('returs'));
+        $detail_returs = DB::select('SELECT * FROM view_detailretur');
+        return view('retur.index', compact('returs','detail_returs'));
     }
 
     public function create()
     {
+        $barangs = DB::SELECT('SELECT barang.* FROM barang');
+        $detail_penerimaans = DB::SELECT('SELECT detail_penerimaan.* FROM detail_penerimaan');
         $penerimaans = DB::select('SELECT penerimaan.* FROM penerimaan');
         $users = DB::select('SELECT users.* FROM users');
-        return view('retur.create', compact('penerimaans', 'users'));
+        return view('retur.create', compact('penerimaans', 'users','barangs','detail_penerimaans'));
     }
 
     public function store(Request $request)
     {
+        // Validasi input
         $validatedData = $request->validate([
-            'idpenerimaan' => 'required|numeric',
-            'iduser' => 'required|numeric',
-            'jumlah' => 'required|numeric',
+            'idpenerimaan' => 'required|numeric|exists:penerimaan,idpenerimaan',
+            'iduser' => 'required|numeric|exists:users,iduser',
+            'jumlah' => 'required|numeric|min:1',
+            'alasan' => 'required|string|max:255',
         ]);
     
-        // Panggil prosedur dengan parameter sesuai definisi
-        $result = DB::select('CALL sp_create_retur(?, ?, ?)', [
+        // Panggil prosedur untuk membuat retur
+        $result = DB::select('CALL sp_create_retur(?, ?)', [
             $validatedData['idpenerimaan'],
-            $validatedData['iduser'], 
-            $validatedData['jumlah']
+            $validatedData['iduser']
         ]);
     
         // Ambil ID retur dari hasil prosedur
         $idretur = $result[0]->idretur;
+    
+        // Panggil stored procedure untuk membuat detail retur
+        $resultDetail = DB::select('CALL sp_create_detail_retur(?, ?, ?)', [
+            $idretur,
+            $validatedData['jumlah'],
+            $validatedData['alasan']
+        ]);
     
         return redirect()->route('retur.index')->with('success', 'Retur berhasil ditambahkan.');
     }

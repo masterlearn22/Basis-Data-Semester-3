@@ -59,33 +59,15 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link text-dark" href="{{ route('detail_pengadaan.index') }}">
-          <i class="material-symbols-rounded opacity-5">list_alt</i>
-          <span class="nav-link-text ms-1">Detail Pengadaan</span>
-        </a>
-      </li>
-      <li class="nav-item">
         <a class="nav-link text-dark" href="{{ route('penerimaan.index') }}">
           <i class="material-symbols-rounded opacity-5">inventory</i>
           <span class="nav-link-text ms-1">Penerimaan</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link text-dark" href="{{ route('detail_penerimaan.index') }}">
-          <i class="material-symbols-rounded opacity-5">list_alt</i>
-          <span class="nav-link-text ms-1">Detail Penerimaan</span>
-        </a>
-      </li>
-      <li class="nav-item">
         <a class="nav-link text-dark" href="{{ route('retur.index') }}">
           <i class="material-symbols-rounded opacity-5">undo</i>
           <span class="nav-link-text ms-1">Retur</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-dark" href="{{ route('detail_retur.index') }}">
-          <i class="material-symbols-rounded opacity-5">list_alt</i>
-          <span class="nav-link-text ms-1">Detail Retur</span>
         </a>
       </li>
 

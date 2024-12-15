@@ -250,45 +250,93 @@ END;
 
         // Stored Procedure untuk Retur
         DB::statement('
-        CREATE PROCEDURE sp_create_retur(
-            IN p_idpenerimaan INT,
-            IN p_iduser INT
-        )
-        BEGIN
-            DECLARE v_idretur INT;
-            
-            -- Insert ke tabel retur
-            INSERT INTO retur (idpenerimaan, iduser, created_at)
-            VALUES (p_idpenerimaan, p_iduser, NOW());
-            
-            -- Ambil ID retur yang baru saja dibuat
-            SET v_idretur = LAST_INSERT_ID();
-            
-            -- Insert detail retur
-            INSERT INTO detail_retur (idretur)
-            VALUES (v_idretur);
-            
-            -- Kembalikan ID retur
-            SELECT v_idretur AS idretur;
-        END
+CREATE PROCEDURE sp_create_retur(
+    IN p_idpenerimaan INT,
+    IN p_iduser INT
+)
+BEGIN
+    DECLARE v_idretur INT;
+    DECLARE v_existing_retur INT;
+    DECLARE v_penerimaan_exists INT;
+    DECLARE v_detail_penerimaan_exists INT;
+
+    -- Cek apakah penerimaan dengan ID yang diberikan ada
+    SELECT COUNT(*) INTO v_penerimaan_exists
+    FROM penerimaan
+    WHERE idpenerimaan = p_idpenerimaan;
+
+    -- Cek apakah ada detail penerimaan untuk penerimaan ini
+    SELECT COUNT(*) INTO v_detail_penerimaan_exists
+    FROM detail_penerimaan
+    WHERE idpenerimaan = p_idpenerimaan;
+
+    -- Validasi penerimaan dan detail penerimaan
+    IF v_penerimaan_exists = 0 THEN
+        SIGNAL SQLSTATE "45000"
+        SET MESSAGE_TEXT = "Penerimaan tidak ditemukan";
+    END IF;
+
+    IF v_detail_penerimaan_exists = 0 THEN
+        SIGNAL SQLSTATE "45000"
+        SET MESSAGE_TEXT = "Tidak ada detail penerimaan untuk penerimaan ini";
+    END IF;
+
+    -- Cek apakah sudah ada retur untuk penerimaan ini
+    SELECT idretur INTO v_existing_retur
+    FROM retur
+    WHERE idpenerimaan = p_idpenerimaan
+    LIMIT 1;
+
+    -- Jika belum ada retur, buat baru dengan ID yang sama dengan penerimaan
+    IF v_existing_retur IS NULL THEN
+        -- Insert ke tabel retur menggunakan idpenerimaan sebagai idretur
+        INSERT INTO retur (idretur, idpenerimaan, iduser, created_at)
+        VALUES (p_idpenerimaan, p_idpenerimaan, p_iduser, NOW());
+
+        SET v_idretur = p_idpenerimaan;
+    ELSE
+        -- Jika sudah ada, kembalikan idretur yang sudah ada
+        SET v_idretur = v_existing_retur;
+    END IF;
+
+    -- Kembalikan ID retur
+    SELECT v_idretur AS idretur;
+END;
         ');
 
         // Stored Procedure untuk Detail Retur
         DB::statement('
-        CREATE PROCEDURE sp_create_detail_retur(
-            IN p_idretur INT,
-            IN p_iddetail_penerimaan INT,
-            IN p_alasan VARCHAR(255),
-            IN p_jumlah INT
-        )
-        BEGIN
-            INSERT INTO detail_retur 
-            (idretur, iddetail_penerimaan, alasan, jumlah) 
-            VALUES 
-            (p_idretur, p_iddetail_penerimaan, p_alasan, p_jumlah);
-            
-            SELECT LAST_INSERT_ID() AS iddetail_retur;
-        END
+CREATE PROCEDURE sp_create_detail_retur(
+    IN p_idretur INT,
+    IN p_jumlah INT,
+    IN p_alasan VARCHAR(255)
+)
+BEGIN
+    DECLARE v_iddetail_penerimaan INT;
+
+    -- Ambil iddetail_penerimaan dari detail_penerimaan yang sesuai dengan retur
+    SELECT iddetail_penerimaan INTO v_iddetail_penerimaan
+    FROM detail_penerimaan dp
+    JOIN penerimaan p ON dp.idpenerimaan = p.idpenerimaan
+    WHERE p.idpenerimaan = p_idretur
+    LIMIT 1;
+
+    -- Insert ke detail_retur
+    INSERT INTO detail_retur (
+        idretur, 
+        iddetail_penerimaan, 
+        alasan, 
+        jumlah
+    ) 
+    VALUES (
+        p_idretur, 
+        v_iddetail_penerimaan, 
+        p_alasan, 
+        p_jumlah
+    );
+    
+    SELECT LAST_INSERT_ID() AS iddetail_retur;
+END;
          ');
 
         // Stored Procedure untuk Margin Penjualan
